@@ -1023,6 +1023,9 @@ header {
   <div class="proj-grid" id="projGrid"></div>
 </div>
 
+<!-- ══ APP SHELL (hidden until logged in) ══ -->
+<div id="appShell" style="display:none">
+
 <!-- ══ HEADER ══ -->
 <header>
   <div class="logo">
@@ -1331,6 +1334,7 @@ header {
   </div>
 
 </div><!-- /app -->
+</div><!-- /appShell -->
 
 <script>
 
@@ -1378,6 +1382,7 @@ async function handleAuth() {
 async function signOut() {
   await supa.auth.signOut();
   currentUser = null;
+  projectStore = [];
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('projectListScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'none';
@@ -1390,12 +1395,14 @@ supa.auth.onAuthStateChange(async (event, session) => {
     await dbLoadProps();
     await dbLoadProjects();
     document.getElementById('projectListScreen').style.display = 'flex';
+    document.getElementById('appShell').style.display = 'none';
     renderProjectList();
   } else {
     currentUser = null;
     projectStore = [];
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('projectListScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
   }
 });
 
@@ -1520,6 +1527,7 @@ function openProject(id) {
   document.getElementById('headerProjName').textContent = project.name;
   document.getElementById('headerJobNo').textContent    = project.jobNo;
   document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
   showPage('levels');
   updateCalcBtn();
 }
@@ -1531,6 +1539,7 @@ function saveActiveProject() {
 
 function showProjectList() {
   saveActiveProject();
+  document.getElementById('appShell').style.display = 'none';
   document.getElementById('projectListScreen').style.display = 'flex';
   renderProjectList();
 }

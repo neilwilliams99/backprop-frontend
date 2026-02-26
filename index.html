@@ -1,0 +1,2740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BackProp — IKB Engineering</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  --bg: #0a0e13;
+  --surface: #111720;
+  --surface2: #161e2a;
+  --surface3: #1c2535;
+  --border: #2a3447;
+  --border2: #3a4d66;
+  --text: #dde8f5;
+  --text-muted: #7d8590;
+  --text-dim: #3d5170;
+  --accent: #e8a020;
+  --accent2: #4da8ff;
+  --accent3: #38c96e;
+  --danger: #f05050;
+  --warn: #d4921a;
+  --tg: #38c96e;
+  --np: #f05050;
+  --wet: #4da8ff;
+  --ok: #38c96e;
+  --prop: #c47dff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+}
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.logo span { color: var(--accent); }
+.logo-byline {
+  font-size: 8px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border-radius: 7px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+.nav-tab {
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.nav-tab.active {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+#tab-projects {
+  color: var(--text-muted);
+  border-right: 1px solid var(--border);
+  margin-right: 2px;
+  padding-right: 16px;
+}
+.nav-tab:hover:not(.active) { color: var(--text); }
+
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.proj-info {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-muted);
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.proj-info:hover { border-color: var(--border2); color: var(--text); }
+.proj-info span { color: var(--accent); }
+
+.btn {
+  padding: 6px 13px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-ghost { background: transparent; color: var(--text-muted); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.btn-accent { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+.btn-accent:hover { background: #cc8c15; }
+.btn-calc-stale { background: var(--danger) !important; border-color: var(--danger) !important; color: #fff !important; }
+.btn-calc-stale:hover { background: #c03030 !important; }
+.btn-calc-ok { background: var(--tg) !important; border-color: var(--tg) !important; color: #000 !important; }
+.btn-calc-ok:hover { background: #28a858 !important; }
+.btn-blue { background: var(--accent2); color: #000; border-color: var(--accent2); font-weight: 500; }
+.btn-blue:hover { background: #3a90e0; }
+.btn-green { background: var(--tg); color: #000; border-color: var(--tg); font-weight: 500; }
+.btn-green:hover { background: #28a858; }
+.btn-sm { padding: 4px 9px; font-size: 10px; }
+.btn-danger { background: rgba(240,80,80,0.15); color: var(--danger); border-color: rgba(240,80,80,0.3); }
+.btn-danger:hover { background: rgba(240,80,80,0.25); }
+
+/* ── LAYOUT ── */
+.app {
+  margin-top: 52px;
+  height: calc(100vh - 52px);
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── PAGES ── */
+.page { display: none; width: 100%; height: 100%; overflow: auto; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ── BUILDING LEVELS PAGE ── */
+.page-header {
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.page-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+.page-content { flex: 1; overflow: auto; padding: 24px 28px; }
+
+/* Building stack visualisation */
+.building-editor {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  max-width: 1200px;
+}
+
+.levels-stack {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.levels-stack-header {
+  display: grid;
+  grid-template-columns: 36px 120px 100px 36px;
+  gap: 0;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+}
+.col-head {
+  padding: 8px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.level-row {
+  display: grid;
+  grid-template-columns: 36px 120px 100px 36px;
+  gap: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.1s;
+}
+.level-row:hover { background: var(--surface2); }
+.level-row:last-child { border-bottom: none; }
+.level-row.is-ground { background: rgba(56,201,110,0.05); }
+.level-row.is-ground:hover { background: rgba(56,201,110,0.08); }
+
+.level-badge {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+}
+.level-badge.ground { color: var(--tg); font-style: normal; font-weight: 500; }
+
+.row-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.1s;
+}
+.row-input:hover { border-color: var(--border); }
+.row-input:focus { border-color: var(--accent2); background: var(--surface2); }
+.row-input.name { font-weight: 500; font-size: 13px; }
+
+.level-zones-btn {
+  font-size: 10px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.level-zones-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(77,168,255,0.05); }
+.level-zones-btn.has-zones { border-color: rgba(77,168,255,0.4); color: var(--accent2); background: rgba(77,168,255,0.07); }
+
+.add-level-row {
+  padding: 10px 12px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: all 0.15s;
+}
+.add-level-row:hover { color: var(--accent2); background: rgba(77,168,255,0.03); }
+
+.del-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+}
+.del-btn:hover { color: var(--danger); background: rgba(240,80,80,0.1); }
+
+/* Right panel */
+.levels-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 12px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+}
+.panel-body { padding: 14px 16px; }
+.field-group { margin-bottom: 10px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: block; }
+.field-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field-input:focus { border-color: var(--accent2); }
+.field-row { display: flex; gap: 8px; }
+.field-row .field-group { flex: 1; }
+
+/* ── ZONES PAGE ── */
+.zones-page { padding: 24px 28px; max-width: 1200px; }
+.zones-breadcrumb {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.zones-breadcrumb a {
+  color: var(--accent2);
+  cursor: pointer;
+  text-decoration: none;
+}
+.zones-breadcrumb a:hover { text-decoration: underline; }
+.zones-breadcrumb span { color: var(--text-dim); }
+
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.zone-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.zone-card:hover { border-color: var(--border2); }
+.zone-card-header {
+  background: var(--surface2);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.zone-card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  display: flex; align-items: center; gap: 8px;
+}
+.zone-thickness-badge {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  padding: 2px 7px;
+  background: rgba(77,168,255,0.1);
+  border: 1px solid rgba(77,168,255,0.25);
+  border-radius: 10px;
+  color: var(--wet);
+}
+
+.zone-body { padding: 12px 14px; }
+.zone-field { margin-bottom: 8px; }
+.zone-field label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; display: block; }
+.zone-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.zone-input:focus { border-color: var(--accent2); }
+
+/* Zone levels table */
+.zone-levels-table {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.zone-levels-table-header {
+  display: grid;
+  grid-template-columns: 24px 54px 74px 74px minmax(160px, 1fr);
+  gap: 0;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+}
+.zone-col-head {
+  padding: 5px 4px;
+  font-size: 9px;
+  color: var(--text-muted);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.zone-level-row {
+  display: grid;
+  grid-template-columns: 24px 54px 74px 74px minmax(160px, 1fr);
+  gap: 0;
+  padding: 2px 8px;
+  border-bottom: 1px solid rgba(42,52,71,0.5);
+  align-items: center;
+  transition: background 0.1s;
+}
+.zone-level-row:last-child { border-bottom: none; }
+.zone-level-row.checked { background: rgba(77,168,255,0.04); }
+.zone-level-row.disabled { opacity: 0.35; }
+
+.zone-check {
+  appearance: none;
+  width: 13px; height: 13px;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  background: var(--surface2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.zone-check:checked {
+  background: var(--accent2);
+  border-color: var(--accent2);
+}
+.zone-check:checked::after {
+  content: '✓';
+  position: absolute;
+  font-size: 9px;
+  color: #000;
+  font-weight: 700;
+}
+
+.zone-lvl-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  padding: 0 4px;
+}
+.zone-lvl-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 3px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.1s;
+}
+.zone-lvl-input:hover:not(:disabled) { border-color: var(--border); }
+.zone-lvl-input:focus:not(:disabled) { border-color: var(--accent2); background: var(--surface2); }
+.zone-lvl-input:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Prop selector in zone */
+.prop-selector-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.prop-select {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+}
+.prop-select:focus { border-color: var(--accent2); }
+
+.add-zone-btn {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: all 0.15s;
+  background: transparent;
+  width: 100%;
+  display: block;
+}
+.add-zone-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(77,168,255,0.03); }
+
+/* ── PROP LIBRARY PAGE ── */
+.prop-library-wrap { padding: 24px 28px; max-width: 1100px; }
+.prop-library-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+.prop-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.prop-table-head {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 80px 44px;
+  gap: 0;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 14px;
+}
+.prop-col-head {
+  padding: 9px 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.prop-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 80px 44px;
+  gap: 0;
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  transition: background 0.1s;
+}
+.prop-row:hover { background: var(--surface2); }
+.prop-row:last-child { border-bottom: none; }
+.prop-row-name { font-size: 12px; font-weight: 500; }
+.prop-cap-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  background: rgba(196,125,255,0.12);
+  border: 1px solid rgba(196,125,255,0.25);
+  color: var(--prop);
+  font-weight: 500;
+}
+.prop-default-star {
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: opacity 0.1s;
+}
+.prop-default-star:hover { opacity: 0.7; }
+.prop-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.prop-empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.3; }
+.add-prop-row {
+  padding: 10px 14px;
+  border-top: 1px dashed var(--border);
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; color: var(--text-muted); font-size: 11px;
+  transition: all 0.15s;
+}
+.add-prop-row:hover { color: var(--prop); background: rgba(196,125,255,0.03); }
+
+.prop-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+}
+
+/* ── ENGINEER VIEW (results) ── */
+.engineer-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.engineer-sidebar {
+  width: 300px;
+  min-width: 300px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.e-sidebar-section {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+}
+.e-sidebar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.engineer-main { flex: 1; overflow: auto; padding: 24px; }
+
+.results-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 10px;
+}
+.results-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 14px; }
+.tag {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  background: rgba(232,160,32,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(232,160,32,0.25);
+}
+
+.matrix-container { overflow-x: auto; margin-bottom: 24px; }
+.matrix-table {
+  border-collapse: collapse;
+  font-size: 11px;
+  min-width: max-content;
+}
+.matrix-table th {
+  background: var(--surface2);
+  color: var(--text-muted);
+  padding: 6px 10px;
+  font-weight: 500;
+  text-align: center;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.matrix-table th.col-pour {
+  background: var(--surface);
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  cursor: pointer;
+}
+.matrix-table th.col-pour:hover { background: rgba(232,160,32,0.05); }
+.matrix-table td {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  min-width: 70px;
+  white-space: nowrap;
+}
+.matrix-table td.row-label {
+  background: var(--surface2);
+  color: var(--text-muted);
+  text-align: left;
+  font-size: 10px;
+  padding-left: 10px;
+}
+.cell-wet { background: rgba(0,178,178,0.1); color: var(--wet); font-style: italic; }
+.cell-tg { background: rgba(56,201,110,0.1); color: var(--tg); }
+.cell-np { background: rgba(240,80,80,0.12); color: var(--np); font-weight: 500; }
+.cell-ok { background: rgba(56,201,110,0.06); color: var(--ok); }
+.cell-warn { background: rgba(196,122,0,0.1); color: var(--warn); }
+.cell-empty { background: var(--bg); color: var(--border); }
+.cell-inactive { background: rgba(8,20,20,0.6); color: var(--text-dim); font-size: 9px; }
+
+/* ── BUILDER VIEW ── */
+.builder-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.builder-sidebar {
+  width: 260px;
+  min-width: 260px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 14px;
+  flex-shrink: 0;
+}
+.builder-main { flex: 1; overflow: auto; padding: 24px; }
+
+.pour-list { display: flex; flex-direction: column; gap: 4px; }
+.pour-item {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pour-item:hover { border-color: var(--border2); color: var(--text); }
+.pour-item.active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+.pour-item-name { font-weight: 500; font-size: 12px; }
+.pour-item-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+.sidebar-pour-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(42,52,71,0.4);
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+.sidebar-pour-item:hover {
+  background: var(--surface2);
+}
+
+.building-vis-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.vis-level {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 3px;
+}
+.vis-label { width: 55px; text-align: right; font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+.vis-bar {
+  flex: 1;
+  height: 30px;
+  border-radius: 4px;
+  display: flex; align-items: center; padding: 0 10px;
+  font-size: 11px; font-weight: 500;
+  border: 1px solid transparent;
+  min-width: 180px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+.vis-bar::before {
+  content: '';
+  position: absolute; left:0; top:0; bottom:0;
+  width: 30%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+.vis-badge { display: none; } /* badges removed — info is now in bar text */
+
+.slab-wet { background: linear-gradient(135deg,#102035,#172d4a); border-color:var(--wet); color:var(--wet); animation: pulse-wet 2s infinite; }
+@keyframes pulse-wet { 0%,100%{box-shadow:0 0 0 0 rgba(77,168,255,0.15)} 50%{box-shadow:0 0 0 4px rgba(77,168,255,0.07)} }
+.slab-tg { background: linear-gradient(135deg,#0d2419,#122e1e); border-color:var(--tg); color:var(--tg); }
+.slab-ok { background: linear-gradient(135deg,#0b1e13,#10271a); border-color:rgba(56,201,110,0.25); color:var(--tg); }
+.slab-np { background: linear-gradient(135deg,#2a1010,#381515); border-color:var(--np); color:var(--np); }
+.slab-warn { background: linear-gradient(135deg,#271c08,#332410); border-color:var(--warn); color:var(--warn); }
+.slab-neutral { background: var(--surface2); border-color:var(--border); color:var(--text-muted); }
+
+.badge-tg { background:rgba(56,201,110,0.12); color:var(--tg); border:1px solid rgba(56,201,110,0.25); }
+.badge-ok { background:rgba(56,201,110,0.08); color:var(--tg); border:1px solid rgba(56,201,110,0.15); }
+.badge-warn { background:rgba(212,146,26,0.12); color:var(--warn); border:1px solid rgba(212,146,26,0.25); }
+.badge-np { background:rgba(240,80,80,0.12); color:var(--np); border:1px solid rgba(240,80,80,0.25); }
+.badge-wet { background:rgba(77,168,255,0.1); color:var(--wet); border:1px solid rgba(77,168,255,0.2); }
+.badge-neutral { background:var(--surface2); color:var(--text-muted); border:1px solid var(--border); }
+
+.vis-props { display:flex; align-items:flex-end; gap:2px; margin:2px 0 2px 65px; height:12px; }
+.vis-prop-line { background:var(--accent); width:2px; border-radius:1px; opacity:0.6; }
+
+.builder-legend { display:flex; gap:14px; flex-wrap:wrap; padding:10px 14px; background:var(--bg); border-radius:6px; margin-bottom:16px; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text-muted); }
+.legend-swatch { width:11px; height:11px; border-radius:2px; border:1px solid currentColor; }
+
+.summary-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.summary-panel-header {
+  background: var(--surface2);
+  padding: 11px 16px;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.pass-badge {
+  padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 500;
+}
+.pass-badge.pass { background:rgba(56,201,110,0.12); color:var(--tg); }
+.pass-badge.fail { background:rgba(240,80,80,0.12); color:var(--np); }
+.pass-badge.partial { background:rgba(212,146,26,0.12); color:var(--warn); }
+.summary-body { padding: 14px 16px; }
+.info-row { display:flex; justify-content:space-between; font-size:11px; padding:3px 0; border-bottom:1px solid rgba(42,52,71,0.4); }
+.info-row:last-child { border-bottom:none; }
+.info-key { color:var(--text-muted); }
+.info-val { font-weight:500; }
+
+/* ── MODALS ── */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 500;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 460px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin-bottom:6px; }
+.modal-sub { font-size:11px; color:var(--text-muted); margin-bottom:18px; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 14px;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color:var(--accent2); background:rgba(77,168,255,0.04); }
+.drop-zone-icon { font-size:30px; margin-bottom:8px; }
+.drop-zone-text { color:var(--text-muted); font-size:11px; }
+.drop-zone-text strong { color:var(--accent2); }
+
+/* ── PROJ SETTINGS MODAL ── */
+.proj-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom:20px; right:20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-size: 11px;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: all 0.25s;
+  z-index: 1000;
+  max-width: 280px;
+  pointer-events: none;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:var(--tg); }
+.toast.error { border-color:var(--np); }
+.toast.info { border-color:var(--accent2); }
+
+/* ── EMPTY STATES ── */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 300px; color: var(--text-muted); text-align: center;
+}
+.empty-icon { font-size: 44px; margin-bottom:12px; opacity:0.3; }
+.empty-text { font-size:13px; }
+.empty-hint { font-size:11px; margin-top:6px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--border2); }
+
+.divider { height:1px; background:var(--border); margin:10px 0; }
+
+.chip {
+  display:inline-flex; padding:2px 8px; border-radius:8px; font-size:10px;
+  background:rgba(77,168,255,0.1); color:var(--accent2); border:1px solid rgba(77,168,255,0.2);
+}
+.chip-green { background:rgba(56,201,110,0.1); color:var(--tg); border-color:rgba(56,201,110,0.2); }
+.chip-purple { background:rgba(196,125,255,0.1); color:var(--prop); border-color:rgba(196,125,255,0.2); }
+.chip-warn { background:rgba(212,146,26,0.1); color:var(--warn); border-color:rgba(212,146,26,0.2); }
+
+/* ── PROJECT LIST SCREEN ── */
+#projectListScreen {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 60px 24px 40px;
+}
+.proj-screen-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.proj-screen-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px; font-weight: 800;
+  margin-bottom: 6px;
+}
+.proj-screen-logo span { color: var(--accent); }
+.proj-screen-sub { font-size: 12px; color: var(--text-muted); }
+.proj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 1000px;
+}
+.proj-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.proj-card:hover { border-color: var(--accent); background: var(--surface2); }
+.proj-card-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  margin-bottom: 4px;
+}
+.proj-card-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.proj-card-stats { display: flex; gap: 10px; font-size: 10px; color: var(--text-muted); }
+.proj-card-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.proj-card-stat-val { font-size: 14px; font-weight: 600; color: var(--text); font-family: 'Syne', sans-serif; }
+.proj-card-del {
+  position: absolute; top: 10px; right: 10px;
+  background: transparent; border: none; color: var(--text-dim);
+  cursor: pointer; font-size: 14px; line-height: 1; padding: 2px 5px;
+  border-radius: 4px;
+  transition: all 0.1s;
+}
+.proj-card-del:hover { color: var(--danger); background: rgba(240,80,80,0.1); }
+.proj-card-new {
+  border: 1px dashed var(--border2);
+  background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; color: var(--text-muted);
+  min-height: 120px;
+}
+.proj-card-new:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,160,32,0.03); }
+.proj-new-icon { font-size: 28px; opacity: 0.4; }
+.proj-new-label { font-size: 12px; }
+
+<body>
+
+<!-- ══ AUTH SCREEN ══ -->
+<div id="authScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
+  <div style="width:360px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px">BACK<span style="color:var(--accent)">PROP</span></div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-muted);letter-spacing:1px;margin-top:4px">BY IKB ENGINEERING</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px">
+      <div style="display:flex;gap:0;margin-bottom:24px;background:var(--bg);border-radius:6px;padding:3px;border:1px solid var(--border)">
+        <button id="tabSignin" onclick="switchAuthTab('signin')" style="flex:1;padding:6px;border:none;border-radius:4px;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Sign In</button>
+        <button id="tabSignup" onclick="switchAuthTab('signup')" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Sign Up</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
+          <input id="authEmail" type="email" placeholder="you@example.com"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
+          <input id="authPassword" type="password" placeholder="••••••••"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none"
+            onkeydown="if(event.key==='Enter')handleAuth()">
+        </div>
+        <div id="authError" style="display:none;color:var(--np);font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px;border:1px solid rgba(240,80,80,0.2)"></div>
+        <button onclick="handleAuth()" style="margin-top:4px;padding:10px;background:var(--accent);color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:0.5px" id="authBtn">Sign In</button>
+      </div>
+      <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:var(--tg);font-family:'DM Mono',monospace"></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace">
+      Back-propping design tool · IKB Engineering
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROJECT LIST SCREEN ══ -->
+<div id="projectListScreen" style="display:none">
+  <div class="proj-screen-header">
+    <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
+    <div class="proj-screen-sub">IKB Engineering — Back-Propping Design Tool</div>
+  </div>
+  <div class="proj-grid" id="projGrid"></div>
+</div>
+
+<!-- ══ APP SHELL (shown after login) ══ -->
+<div id="appShell" style="display:none;flex-direction:column;height:100vh">
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="logo">
+    <div>BACK<span>PROP</span></div>
+    <div class="logo-byline">By IKB Engineering</div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab" onclick="showProjectList()" id="tab-projects">← Projects</button>
+    <button class="nav-tab active" onclick="showPage('levels')" id="tab-levels">🏗 Building Levels</button>
+    <button class="nav-tab" onclick="showPage('props')" id="tab-props">🔩 Prop Library</button>
+    <button class="nav-tab" onclick="showPage('engineer')" id="tab-engineer">⚙ Engineer View</button>
+    <button class="nav-tab" onclick="showPage('builder')" id="tab-builder">👷 Builder View</button>
+  </div>
+
+  <div class="header-right">
+    <button class="proj-info" onclick="openProjModal()">
+      <span id="headerProjName">New Project</span> · <span style="color:var(--text-muted)" id="headerJobNo">—</span>
+    </button>
+    <button class="btn btn-ghost" onclick="openImport()">⬆ Import</button>
+    <button class="btn btn-ghost" onclick="exportResults()">⬇ Export</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
+    <span id="headerUserEmail" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    <button class="btn btn-ghost" onclick="signOut()" title="Sign out" style="font-size:10px">⎋ Sign out</button>
+    <button class="btn btn-accent" id="calcBtn" onclick="runCalc()">▶ Calculate</button>
+  </div>
+</header>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ══ IMPORT MODAL ══ -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-title">Import Spreadsheet</div>
+    <div class="modal-sub">Import an existing back-propping XLSX. Reads levels from THICKNESS and CAPACITY sheets.</div>
+    <div class="drop-zone" id="dropZone"
+      onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleDrop(event)">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-text"><strong>Click to browse</strong> or drag & drop<br>XLSX files only</div>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(event)" style="display:none">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeImport()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PROJECT SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="projModal">
+  <div class="modal">
+    <div class="modal-title">Project Settings</div>
+    <div class="modal-sub">Configure project details and engineering parameters.</div>
+    <div class="proj-modal-grid">
+      <div class="field-group" style="grid-column:1/-1">
+        <label class="field-label">Project Name</label>
+        <input class="field-input" id="projName" value="Project 10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Number</label>
+        <input class="field-input" id="jobNo" value="10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Prepared By</label>
+        <input class="field-input" id="prepBy" value="">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Engineering Parameters</div>
+    <div class="proj-modal-grid">
+      <div class="field-group">
+        <label class="field-label">Concrete density (kN/m³)</label>
+        <input class="field-input" id="concDensity" type="number" value="24" step="0.5">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Max prop spacing (m)</label>
+        <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div class="app">
+
+  <!-- ══════════════════════════════════════════════
+       PAGE 1: BUILDING LEVELS
+  ══════════════════════════════════════════════ -->
+  <div class="page active" id="page-levels">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Building Levels</div>
+        <div class="page-subtitle">Construct the building from bottom to top. Enter each level name, then open Zones to define the pour configuration.</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="addLevel()">+ Add Level</button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="building-editor">
+
+        <!-- Levels Stack -->
+        <div>
+          <div class="levels-stack">
+            <div class="levels-stack-header">
+              <div class="col-head" style="text-align:center">#</div>
+              <div class="col-head">Level Name</div>
+              <div class="col-head">Zones</div>
+              <div class="col-head"></div>
+            </div>
+            <div class="add-level-row" onclick="addLevel()" style="border-top:none;border-bottom:1px dashed var(--border)">
+              <span style="font-size:16px;line-height:1">+</span> Add Level (builds upward ↑)
+            </div>
+            <div id="levelsBody"></div>
+          </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="levels-sidebar">
+          <div class="panel">
+            <div class="panel-header">
+              <span>Project Summary</span>
+            </div>
+            <div class="panel-body" id="projectSummaryPanel">
+              <div class="info-row"><span class="info-key">Total levels</span><span class="info-val" id="sumLevels">0</span></div>
+              <div class="info-row"><span class="info-key">Total zones</span><span class="info-val" id="sumZones">0</span></div>
+              <div class="info-row"><span class="info-key">Props in library</span><span class="info-val" id="sumProps">0</span></div>
+              <div class="info-row"><span class="info-key">Status</span><span class="info-val" id="sumStatus"><span class="chip-warn chip">Not calculated</span></span></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span>Quick Help</span></div>
+            <div class="panel-body" style="font-size:11px;color:var(--text-muted);line-height:1.7">
+              <div style="margin-bottom:8px">① The <strong style="color:var(--tg)">Base Level</strong> is always the lowest level — rename it as needed (e.g. Ground, Podium).</div>
+              <div style="margin-bottom:8px">② Add levels <strong style="color:var(--text)">above</strong> the base using <em>Add Level</em> — they build upward.</div>
+              <div style="margin-bottom:8px">③ Click <strong style="color:var(--accent2)">Zones →</strong> on any upper level to define pour zones and back-propping.</div>
+              <div>④ Hit <strong style="color:var(--accent)">Calculate</strong> to run the back-propping analysis.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE 1b: ZONES (within a level)
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="page-zones">
+    <div class="page-header">
+      <div>
+        <div class="zones-breadcrumb">
+          <a onclick="showPage('levels')">← Building Levels</a>
+          <span>/</span>
+          <span id="zonesBreadcrumbLevel" style="color:var(--text)">Level 4</span>
+        </div>
+        <div class="page-title" id="zonesPageTitle">Level 4 — Zones</div>
+        <div class="page-subtitle">Define pour zones for this level. Each zone represents a slab area with its own wet concrete thickness and back-propping arrangement.</div>
+      </div>
+      <div style="margin-left:auto">
+        <button class="btn btn-green btn-sm" onclick="addZone()">+ Add Zone</button>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="zones-page" id="zonesContent" style="padding:0">
+        <div class="zones-grid" id="zonesGrid"></div>
+        <button class="add-zone-btn" onclick="addZone()">+ Add Zone to this Level</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE 2: PROP LIBRARY
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="page-props">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Prop Library</div>
+        <div class="page-subtitle">Build a library of props for selection in zone configurations. Set a default for quick assignment.</div>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="prop-library-wrap" style="padding:0">
+        <div class="prop-library-grid">
+
+          <!-- Prop Table -->
+          <div class="prop-table-wrap">
+            <div class="prop-table-head">
+              <div class="prop-col-head">Type / Model</div>
+              <div class="prop-col-head">Extension</div>
+              <div class="prop-col-head" style="text-align:center">Capacity</div>
+              <div class="prop-col-head" style="text-align:center">Default</div>
+              <div class="prop-col-head"></div>
+            </div>
+            <div id="propTableBody"></div>
+            <div class="add-prop-row" onclick="focusPropForm()">
+              <span style="font-size:16px;line-height:1">+</span> Add prop to library
+            </div>
+          </div>
+
+          <!-- Add Prop Form -->
+          <div class="prop-form">
+            <div class="panel-header">
+              <span id="propFormTitle">Add Prop</span>
+            </div>
+            <div class="panel-body" style="padding:16px">
+              <input type="hidden" id="propEditId" value="">
+              <div class="field-group">
+                <label class="field-label">Prop Type / Model</label>
+                <input class="field-input" id="propType" placeholder="e.g. Acrow #2, Hünnebeck P50">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Extension / Configuration</label>
+                <input class="field-input" id="propExtension" placeholder="e.g. 3.2m, Extended to 4.5m">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Capacity (kN)</label>
+                <input class="field-input" type="number" id="propCapacity" placeholder="e.g. 22" step="0.5">
+              </div>
+              <div class="field-group">
+                <label class="field-label">Notes (optional)</label>
+                <input class="field-input" id="propNotes" placeholder="Manufacturer, load case, etc.">
+              </div>
+              <div class="divider"></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-accent" style="flex:1" onclick="saveProp()">Save Prop</button>
+                <button class="btn btn-ghost" onclick="clearPropForm()">Clear</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE 3: ENGINEER VIEW
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="page-engineer">
+    <div class="engineer-layout">
+      <div class="engineer-sidebar">
+        <div class="e-sidebar-section">
+          <div class="e-sidebar-title">Project</div>
+          <div style="font-size:12px;font-weight:500" id="engProjName">Project 10354</div>
+          <div style="font-size:10px;color:var(--text-muted)" id="engJobNo">Job No. 10354</div>
+        </div>
+        <div class="e-sidebar-section">
+          <div class="e-sidebar-title">Parameters</div>
+          <div class="info-row">
+            <span class="info-key">Density kN/m³</span>
+            <input type="number" id="engDensity" value="24" step="0.5" min="10" max="30"
+              style="background:var(--surface3);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:11px;padding:2px 6px;border-radius:4px;width:64px;text-align:right"
+              onchange="project.concDensity=+this.value;markDirty();"
+              title="Concrete density — recalculate after changing">
+          </div>
+          <div class="info-row">
+            <span class="info-key">Max spacing m</span>
+            <input type="number" id="engSpacing" value="3.0" step="0.1" min="0.5" max="6"
+              style="background:var(--surface3);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:11px;padding:2px 6px;border-radius:4px;width:64px;text-align:right"
+              onchange="project.maxSpacing=+this.value;markDirty();"
+              title="Max prop spacing — recalculate after changing">
+          </div>
+        </div>
+        <div class="e-sidebar-section" id="engPoursList">
+          <div class="e-sidebar-title">Pour Scenarios</div>
+          <div id="engPoursBody" style="font-size:11px;color:var(--text-muted)">No results yet</div>
+        </div>
+      </div>
+      <div class="engineer-main" id="engineerMain">
+        <div class="empty-state">
+          <div class="empty-icon">⚙</div>
+          <div class="empty-text">Configure levels & zones, then click Calculate</div>
+          <div class="empty-hint">Results will appear here</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE 4: BUILDER VIEW
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="page-builder">
+    <div class="builder-layout">
+      <div class="builder-sidebar">
+        <div style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:10px">
+          Pour / Zone
+        </div>
+        <div class="pour-list" id="builderPourList">
+          <div style="font-size:11px;color:var(--text-muted)">No results yet — click Calculate</div>
+        </div>
+      </div>
+      <div class="builder-main">
+        <div id="builderContent">
+          <div class="empty-state">
+            <div class="empty-icon">👷</div>
+            <div class="empty-text">Select a pour to view back-propping visualisation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+</div><!-- /appShell -->
+
+<script>
+// ════════════════════════════════════════════════
+//  CONFIGURATION
+// ════════════════════════════════════════════════
+const API_URL  = 'https://backprop-api.onrender.com';
+const SUPA_URL = 'https://kwbmiyjwmsuqllbqwudo.supabase.co';
+const SUPA_KEY = 'sb_publishable_J0mPoTMrkZEj-9Nq2x-VWw_SkhRxr28';
+const supa     = supabase.createClient(SUPA_URL, SUPA_KEY);
+let currentUser = null;
+
+// ════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════
+let authMode = 'signin';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tabSignin').style.background = mode === 'signin' ? 'var(--surface2)' : 'transparent';
+  document.getElementById('tabSignin').style.color      = mode === 'signin' ? 'var(--text)'     : 'var(--text-muted)';
+  document.getElementById('tabSignup').style.background = mode === 'signup' ? 'var(--surface2)' : 'transparent';
+  document.getElementById('tabSignup').style.color      = mode === 'signup' ? 'var(--text)'     : 'var(--text-muted)';
+  document.getElementById('authBtn').textContent        = mode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('authError').style.display   = 'none';
+  document.getElementById('authMsg').style.display     = 'none';
+}
+
+async function handleAuth() {
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl    = document.getElementById('authError');
+  const msgEl    = document.getElementById('authMsg');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    errEl.style.display = 'block'; return;
+  }
+  document.getElementById('authBtn').textContent = '…';
+  if (authMode === 'signup') {
+    const { error } = await supa.auth.signUp({ email, password });
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+    else { msgEl.textContent = 'Account created! Check your email to confirm, then sign in.'; msgEl.style.display = 'block'; }
+  } else {
+    const { error } = await supa.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+  }
+  document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+}
+
+async function signOut() {
+  await supa.auth.signOut();
+  currentUser  = null;
+  projectStore = [];
+  document.getElementById('authScreen').style.display       = 'flex';
+  document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('appShell').style.display         = 'none';
+}
+
+supa.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    document.getElementById('authScreen').style.display        = 'none';
+    document.getElementById('headerUserEmail').textContent     = currentUser.email;
+    await loadProjects();
+    document.getElementById('projectListScreen').style.display = 'flex';
+    renderProjectList();
+  } else {
+    currentUser = null;
+    document.getElementById('authScreen').style.display        = 'flex';
+    document.getElementById('projectListScreen').style.display = 'none';
+    document.getElementById('appShell').style.display          = 'none';
+  }
+});
+
+// ════════════════════════════════════════════════
+//  MULTI-PROJECT STATE + SUPABASE PERSISTENCE
+// ════════════════════════════════════════════════
+let projectStore    = [];
+let activeProjectId = null;
+let saveTimer       = null;
+
+function makeNewProjectData(name, jobNo) {
+  const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+  return {
+    id,
+    _supaId: null,
+    project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0 },
+    levels: [
+      { id: 'base_' + id, name: 'Ground', thickness: 0, slabCap: 100000, addLoad: 0, zones: [], isBase: true }
+    ],
+    calcResults: null,
+  };
+}
+
+async function loadProjects() {
+  if (!currentUser) return;
+  const { data, error } = await supa.from('projects').select('*').order('updated_at', { ascending: false });
+  if (error) { console.error('Load error:', error); return; }
+  projectStore = (data || []).map(row => ({
+    id:          row.id,
+    _supaId:     row.id,
+    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', ...row.data.project },
+    levels:      row.data.levels      || [],
+    calcResults: row.data.calcResults || null,
+  }));
+  const withProps = data?.find(r => r.data.props && r.data.props.length > 0);
+  if (withProps) props = withProps.data.props;
+}
+
+async function saveProjectToSupabase(p) {
+  if (!currentUser) return;
+  const payload = {
+    user_id: currentUser.id,
+    name:    p.project.name,
+    job_no:  p.project.jobNo  || '',
+    prep_by: p.project.prepBy || '',
+    data:    { project: p.project, levels: p.levels, calcResults: p.calcResults, props },
+  };
+  if (p._supaId) {
+    const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);
+    if (error) console.error('Save error:', error);
+  } else {
+    const { data, error } = await supa.from('projects').insert(payload).select().single();
+    if (error) { console.error('Insert error:', error); return; }
+    p._supaId = data.id;
+    p.id      = data.id;
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const p = projectStore.find(x => x.id === activeProjectId);
+    if (p) { saveActiveProject(); saveProjectToSupabase(p); }
+  }, 2000);
+}
+
+function renderProjectList() {
+  const grid = document.getElementById('projGrid');
+  grid.innerHTML = '';
+  projectStore.forEach(p => {
+    const totalZones  = p.levels.reduce((a,l) => a + l.zones.length, 0);
+    const npCount     = p.calcResults ? p.calcResults.filter(r=>r.isNP).length : 0;
+    const statusColor = !p.calcResults ? 'var(--text-muted)' : npCount > 0 ? 'var(--np)' : 'var(--tg)';
+    const statusTxt   = !p.calcResults ? 'Not calculated'    : npCount > 0 ? `${npCount} Fail` : 'All pass';
+    const card = document.createElement('div');
+    card.className = 'proj-card';
+    card.innerHTML = `
+      <button class="proj-card-del" onclick="event.stopPropagation();deleteProject('${p.id}')" title="Delete project">×</button>
+      <div class="proj-card-name">${esc(p.project.name)}</div>
+      <div class="proj-card-meta">Job No. ${esc(p.project.jobNo || '—')}${p.project.prepBy ? ' · ' + esc(p.project.prepBy) : ''}</div>
+      <div class="proj-card-stats">
+        <div class="proj-card-stat"><span class="proj-card-stat-val">${p.levels.length}</span>Levels</div>
+        <div class="proj-card-stat"><span class="proj-card-stat-val">${totalZones}</span>Zones</div>
+        <div class="proj-card-stat"><span class="proj-card-stat-val">${props.length}</span>Props</div>
+        <div class="proj-card-stat"><span class="proj-card-stat-val" style="color:${statusColor};font-size:11px">${statusTxt}</span>Status</div>
+      </div>`;
+    card.onclick = () => openProject(p.id);
+    grid.appendChild(card);
+  });
+  const newCard = document.createElement('div');
+  newCard.className = 'proj-card proj-card-new';
+  newCard.innerHTML = `<div class="proj-new-icon">+</div><div class="proj-new-label">New Project</div>`;
+  newCard.onclick = createProject;
+  grid.appendChild(newCard);
+}
+
+async function createProject() {
+  const name  = prompt('Project name:', 'Project ' + (projectStore.length + 1));
+  if (name === null) return;
+  const jobNo = prompt('Job number (optional):', '');
+  if (jobNo === null) return;
+  const p = makeNewProjectData(name, jobNo);
+  projectStore.unshift(p);
+  await saveProjectToSupabase(p);
+  openProject(p.id);
+}
+
+function openProject(id) {
+  const p = projectStore.find(x => x.id === id);
+  if (!p) return;
+  if (activeProjectId) saveActiveProject();
+  activeProjectId = id;
+  project     = p.project;
+  levels      = p.levels;
+  calcResults = p.calcResults;
+  document.getElementById('headerProjName').textContent      = project.name;
+  document.getElementById('headerJobNo').textContent         = project.jobNo;
+  document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('appShell').style.display          = 'flex';
+  showPage('levels');
+  updateCalcBtn();
+}
+
+function saveActiveProject() {
+  const p = projectStore.find(x => x.id === activeProjectId);
+  if (p) { p.project = project; p.levels = levels; p.calcResults = calcResults; }
+}
+
+function showProjectList() {
+  saveActiveProject();
+  document.getElementById('appShell').style.display          = 'none';
+  document.getElementById('projectListScreen').style.display = 'flex';
+  renderProjectList();
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project? This cannot be undone.')) return;
+  const p = projectStore.find(x => x.id === id);
+  if (p?._supaId) await supa.from('projects').delete().eq('id', p._supaId);
+  projectStore = projectStore.filter(x => x.id !== id);
+  if (activeProjectId === id) {
+    activeProjectId = null;
+    document.getElementById('appShell').style.display = 'none';
+  }
+  renderProjectList();
+  showToast('Project deleted', 'info');
+}
+
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let project = {
+  name: 'Project 10354',
+  jobNo: '10354',
+  prepBy: '',
+  concDensity: 24,
+  maxSpacing: 3.0,
+};
+
+// Levels: bottom to top
+// Each level: { id, name, thickness, slabCap, addLoad, zones: [...] }
+// Zone: { id, name, thickness, levelsBelow: [{levelId, active, slabCap, addLoad, propId, propCapOverride}] }
+// Global working state — loaded from projectStore when a project is opened
+let levels = [];
+// props is USER-LEVEL — shared across all projects, not stored per-project
+let props = [
+  { id: 'p0', type: 'Acrow #2',        extension: '2.0–3.4m', capacity: 18, notes: '',               isDefault: false },
+  { id: 'p1', type: 'Acrow #3',        extension: '2.5–4.5m', capacity: 15, notes: '',               isDefault: false },
+  { id: 'p2', type: 'Heavy Prop (SGB)', extension: '3.0–5.5m', capacity: 55, notes: 'Shoring grade', isDefault: true  },
+];
+let calcResults = null;
+let currentZoneLevelId = null;
+let selectedBuilderPour = 0;
+let _nextId = 100;
+function uid() { return 'id_' + (_nextId++); }
+
+// Base level is always index 0 in the levels array
+function isBaseLevel(lev) {
+  return levels.indexOf(lev) === 0 || lev.isBase === true;
+}
+function isBaseLevelById(levelId) {
+  const lev = levels.find(l => l.id === levelId);
+  return lev ? isBaseLevel(lev) : false;
+}
+
+function makeDefaultZone(lev, levelIdx) {
+  // Build levelsBelow array: levels below this one in reverse (nearest first)
+  const below = [];
+  for (let j = levelIdx - 1; j >= 0; j--) {
+    const depthBelow = levelIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
+    below.push({
+      levelId: levels[j].id,
+      active: (levelIdx - j) <= 3,
+      slabCap: levels[j].slabCap,
+      addLoad: depthBelow === 0 ? 0.3 : 0.1,
+      propId: getDefaultPropId(),
+      propCapOverride: null,
+    });
+  }
+  return {
+    id: 'z_' + lev.id + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    name: 'Zone 1',
+    thickness: lev.thickness,
+    addLoad: 3.0,   // additional construction load on the wet slab level (kPa)
+    levelsBelow: below,
+  };
+}
+
+
+function updateCalcBtn() {
+  const btn = document.getElementById('calcBtn');
+  if (!btn) return;
+  btn.classList.remove('btn-calc-stale', 'btn-calc-ok');
+  if (!calcResults) {
+    btn.classList.add('btn-calc-stale');
+    btn.textContent = '▶ Calculate';
+  } else {
+    btn.classList.add('btn-calc-ok');
+    btn.textContent = '✓ Calculated';
+  }
+}
+
+function markDirty() {
+  calcResults = null;
+  updateCalcBtn();
+  scheduleSave();
+}
+
+// ════════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ════════════════════════════════════════════════
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const tab = document.getElementById('tab-' + page);
+  if (tab) tab.classList.add('active');
+
+  if (page === 'levels') renderLevels();
+  if (page === 'props') renderProps();
+  if (page === 'engineer') renderEngineerView();
+  if (page === 'builder') renderBuilderView();
+  updateSummary();
+}
+
+// ════════════════════════════════════════════════
+//  BUILDING LEVELS PAGE
+// ════════════════════════════════════════════════
+function renderLevels() {
+  const body = document.getElementById('levelsBody');
+  body.innerHTML = '';
+  const total = levels.length;
+
+  // Display top to bottom (roof first, ground last) — mirrors physical building
+  [...levels].reverse().forEach((lev) => {
+    const i = levels.indexOf(lev); // real index in levels array for callbacks
+    const isBase = i === 0; // index 0 = base level
+    const zoneCount = lev.zones.length;
+    const rowNum = levels.length - i; // display number: 1 = highest
+
+    const row = document.createElement('div');
+    row.className = `level-row${isBase ? ' is-ground' : ''}`;
+    row.innerHTML = `
+      <div class="level-badge ${isBase ? 'ground' : ''}">${isBase ? '⊕' : rowNum}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="row-input name" value="${esc(lev.name)}"
+          onchange="updateLevel(${i},'name',this.value)"
+          placeholder="e.g. L4">
+      </div>
+      <div style="display:flex;align-items:center;justify-content:flex-start">
+        ${isBase
+          ? `<span style="font-size:11px;color:var(--text-dim);font-style:italic">— Base Level —</span>`
+          : `<button class="level-zones-btn ${zoneCount > 0 ? 'has-zones' : ''}" onclick="openZones('${lev.id}')">
+              ${zoneCount > 0 ? `${zoneCount} zone${zoneCount>1?'s':''} →` : 'Add zones →'}
+            </button>`}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        ${!isBase && total > 2 ? `<button class="del-btn" onclick="removeLevel(${i})">×</button>` : ''}
+      </div>
+    `;
+    body.appendChild(row);
+  });
+  updateSummary();
+}
+
+function updateLevel(i, key, val) {
+  levels[i][key] = val;
+  if (key === 'name') renderLevels();
+  markDirty();
+  updateSummary();
+}
+
+function addLevel() {
+  const newId = 'lv_' + uid();
+  const newLevel = {
+    id: newId,
+    name: `L${levels.length}`,
+    thickness: 230,
+    slabCap: 2.5,
+    addLoad: 3.0,
+    zones: [],
+  };
+  levels.push(newLevel);
+  renderLevels();
+  markDirty();
+  showToast('Level added', 'success');
+}
+
+function removeLevel(i) {
+  if (i === 0) return; // base level is protected
+  if (levels.length <= 2) return;
+  const name = levels[i].name;
+  levels.splice(i, 1);
+  renderLevels();
+  markDirty();
+  showToast(`Level ${name} removed`, 'info');
+}
+
+// ════════════════════════════════════════════════
+//  ZONES PAGE
+// ════════════════════════════════════════════════
+function openZones(levelId) {
+  currentZoneLevelId = levelId;
+  const lev = levels.find(l => l.id === levelId);
+  if (!lev) return;
+
+  document.getElementById('zonesBreadcrumbLevel').textContent = lev.name;
+  document.getElementById('zonesPageTitle').textContent = `${lev.name} — Zones`;
+
+  // Ensure zones have up-to-date levelsBelow
+  lev.zones.forEach(zone => refreshZoneLevelsBelow(zone, lev));
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-zones').classList.add('active');
+  renderZones(lev);
+}
+
+function refreshZoneLevelsBelow(zone, lev) {
+  const levIdx = levels.indexOf(lev);
+  // Add any new levels below that don't exist in zone.levelsBelow
+  for (let j = levIdx - 1; j >= 0; j--) {
+    const blev = levels[j];
+    if (!zone.levelsBelow.find(b => b.levelId === blev.id)) {
+      const depthBelow = levIdx - 1 - j;
+      zone.levelsBelow.push({
+        levelId: blev.id,
+        active: (levIdx - j) <= 3,
+        slabCap: blev.slabCap,
+        addLoad: depthBelow === 0 ? 0.3 : 0.1,
+        propId: getDefaultPropId(),
+        propCapOverride: null,
+      });
+    }
+  }
+  // Remove deleted levels
+  zone.levelsBelow = zone.levelsBelow.filter(b => levels.find(l => l.id === b.levelId));
+}
+
+function getDefaultPropId() {
+  const def = props.find(p => p.isDefault);
+  return def ? def.id : (props.length > 0 ? props[0].id : null);
+}
+
+function renderZones(lev) {
+  const grid = document.getElementById('zonesGrid');
+  grid.innerHTML = '';
+  const levIdx = levels.indexOf(lev);
+
+  lev.zones.forEach((zone, zi) => {
+    const card = document.createElement('div');
+    card.className = 'zone-card';
+
+    // Build levels-below table rows
+    let levBelowRows = '';
+    zone.levelsBelow.forEach((bl, bli) => {
+      const blev = levels.find(l => l.id === bl.levelId);
+      if (!blev) return;
+      const isGnd = isBaseLevel(blev);
+      const disabledAttr = bl.active ? '' : 'disabled';
+
+      // Prop selector options
+      let propOpts = props.length === 0 ? `<option value="">— add props to library —</option>` : "";
+      props.forEach(p => {
+        propOpts += `<option value="${p.id}" ${bl.propId === p.id ? 'selected' : ''}>${p.type} (${p.capacity}kN)</option>`;
+      });
+
+      // Prop capacity display
+      let propCapVal = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId);
+
+      levBelowRows += `
+        <div class="zone-level-row ${bl.active ? 'checked' : 'disabled'}">
+          <input type="checkbox" class="zone-check" ${bl.active ? 'checked' : ''}
+            onchange="setZoneLevelActive('${lev.id}',${zi},${bli},this.checked)">
+          <div class="zone-lvl-name">${esc(blev.name)}</div>
+          ${isGnd
+            ? `<div class="zone-lvl-input" style="display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--tg);opacity:${bl.active?1:0.3}">∞</div>`
+            : `<input class="zone-lvl-input" type="number" value="${bl.slabCap}" step="0.5" ${disabledAttr}
+                title="Slab capacity (kPa)"
+                onchange="setZoneLevelField('${lev.id}',${zi},${bli},'slabCap',+this.value)">`}
+          <input class="zone-lvl-input" type="number" value="${bl.addLoad}" step="0.5" ${disabledAttr}
+            title="Additional construction load (kPa)"
+            onchange="setZoneLevelField('${lev.id}',${zi},${bli},'addLoad',+this.value)">
+          <div class="prop-selector-row" style="${bl.active ? '' : 'opacity:0.3;pointer-events:none'}">
+            <select class="prop-select" onchange="setZoneProp('${lev.id}',${zi},${bli},this.value)">
+              ${propOpts}
+            </select>
+          </div>
+        </div>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="zone-card-header">
+        <div class="zone-card-title">
+          <span>${esc(lev.name)}</span>
+          <span style="color:var(--text-muted)">·</span>
+          <input style="background:transparent;border:none;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:12px;width:80px;outline:none"
+            value="${esc(zone.name)}"
+            onchange="setZoneName('${lev.id}',${zi},this.value)">
+          <span class="zone-thickness-badge" id="zoneBadge_${lev.id}_${zi}">${zone.thickness} mm</span>
+        </div>
+        <button class="del-btn" onclick="removeZone('${lev.id}',${zi})">×</button>
+      </div>
+      <div class="zone-body">
+        <div style="display:flex;gap:12px">
+          <div class="zone-field" style="flex:1">
+            <label>Wet concrete thickness (mm)</label>
+            <input class="zone-input" type="number" value="${zone.thickness}" step="10"
+              onchange="setZoneThickness('${lev.id}',${zi},+this.value)">
+          </div>
+          <div class="zone-field" style="flex:1">
+            <label>Construction load — wet level (kPa)</label>
+            <input class="zone-input" type="number" value="${zone.addLoad ?? 3.0}" step="0.1" min="0"
+              title="Additional construction load applied at the wet slab level (formwork, equipment, workers)"
+              onchange="setZoneAddLoad('${lev.id}',${zi},+this.value)">
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:5px;display:flex;align-items:center;gap:8px">
+            LOAD-BEARING LEVELS BELOW
+            <span class="chip" style="font-size:9px">✓ = In Back-Prop Stack</span>
+          </div>
+          <div class="zone-levels-table">
+            <div class="zone-levels-table-header">
+              <div class="zone-col-head"></div>
+              <div class="zone-col-head">Level</div>
+              <div class="zone-col-head">Slab Cap<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
+              <div class="zone-col-head">Add Load<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
+              <div class="zone-col-head">Prop Selection</div>
+            </div>
+            ${zone.levelsBelow.length > 0 ? levBelowRows : '<div style="padding:12px;font-size:11px;color:var(--text-muted);text-align:center">No levels below this one</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (lev.zones.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="height:200px"><div class="empty-icon">📐</div><div class="empty-text">No zones defined yet</div><div class="empty-hint">Click Add Zone to start</div></div>`;
+  }
+}
+
+function addZone() {
+  const lev = levels.find(l => l.id === currentZoneLevelId);
+  if (!lev) return;
+  const levIdx = levels.indexOf(lev);
+  const zoneNum = lev.zones.length + 1;
+  const newZone = {
+    id: 'z_' + uid(),
+    name: `Zone ${zoneNum}`,
+    thickness: lev.thickness,
+    addLoad: 3.0,   // additional construction load on the wet slab (kPa)
+    levelsBelow: [],
+  };
+  // Build levelsBelow — first level below gets 0.3 kPa, subsequent 0.1 kPa
+  for (let j = levIdx - 1; j >= 0; j--) {
+    const depthBelow = levIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
+    newZone.levelsBelow.push({
+      levelId: levels[j].id,
+      active: (levIdx - j) <= 3,
+      slabCap: levels[j].slabCap,
+      addLoad: depthBelow === 0 ? 0.3 : 0.1,
+      propId: getDefaultPropId(),
+      propCapOverride: null,
+    });
+  }
+  lev.zones.push(newZone);
+  renderZones(lev);
+  markDirty();
+  updateSummary();
+}
+
+function removeZone(levId, zi) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones.splice(zi, 1);
+  renderZones(lev);
+  markDirty();
+  updateSummary();
+}
+
+function setZoneName(levId, zi, val) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].name = val;
+  markDirty();
+}
+
+function setZoneThickness(levId, zi, val) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].thickness = val;
+  const badge = document.getElementById(`zoneBadge_${levId}_${zi}`);
+  if (badge) badge.textContent = val + ' mm';
+  markDirty();
+}
+
+function setZoneAddLoad(levId, zi, val) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].addLoad = val;
+  markDirty();
+}
+
+function setZoneLevelActive(levId, zi, bli, checked) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].levelsBelow[bli].active = checked;
+  renderZones(lev);
+  markDirty();
+}
+
+function setZoneLevelField(levId, zi, bli, field, val) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].levelsBelow[bli][field] = val;
+  markDirty();
+}
+
+function setZoneProp(levId, zi, bli, propId) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  lev.zones[zi].levelsBelow[bli].propId = propId || null;
+  lev.zones[zi].levelsBelow[bli].propCapOverride = null;
+  markDirty();
+}
+
+function getPropCap(propId) {
+  if (!propId) return null;
+  const p = props.find(pr => pr.id === propId);
+  return p ? p.capacity : null;
+}
+
+// ════════════════════════════════════════════════
+//  PROP LIBRARY
+// ════════════════════════════════════════════════
+function renderProps() {
+  const body = document.getElementById('propTableBody');
+  if (props.length === 0) {
+    body.innerHTML = `<div class="prop-empty"><div class="prop-empty-icon">🔩</div>No props in library yet. Add one using the form →</div>`;
+    return;
+  }
+  body.innerHTML = '';
+  props.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    row.innerHTML = `
+      <div>
+        <div class="prop-row-name">${esc(p.type)}</div>
+        ${p.notes ? `<div style="font-size:10px;color:var(--text-muted)">${esc(p.notes)}</div>` : ''}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted)">${esc(p.extension)}</div>
+      <div style="text-align:center"><span class="prop-cap-badge">${p.capacity} kN</span></div>
+      <div style="text-align:center">
+        <span class="prop-default-star" title="${p.isDefault ? 'Default prop (click to unset)' : 'Click to set as default'}"
+          onclick="togglePropDefault(${i})">
+          ${p.isDefault ? '★' : '☆'}
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <button class="del-btn" style="font-size:12px" title="Edit" onclick="editProp(${i})">✎</button>
+        <button class="del-btn" onclick="removeProp(${i})">×</button>
+      </div>
+    `;
+    body.appendChild(row);
+  });
+  updateSummary();
+}
+
+function focusPropForm() {
+  document.getElementById('propType').focus();
+}
+
+function saveProp() {
+  const type = document.getElementById('propType').value.trim();
+  const ext = document.getElementById('propExtension').value.trim();
+  const cap = parseFloat(document.getElementById('propCapacity').value);
+  const notes = document.getElementById('propNotes').value.trim();
+  const editId = document.getElementById('propEditId').value;
+
+  if (!type) { showToast('Enter a prop type', 'error'); return; }
+  if (isNaN(cap) || cap <= 0) { showToast('Enter a valid capacity', 'error'); return; }
+
+  if (editId) {
+    const idx = props.findIndex(p => p.id === editId);
+    if (idx >= 0) {
+      props[idx] = { ...props[idx], type, extension: ext, capacity: cap, notes };
+      showToast('Prop updated', 'success');
+    }
+  } else {
+    props.push({ id: 'p_' + uid(), type, extension: ext, capacity: cap, notes, isDefault: props.length === 0 });
+    showToast('Prop added to library', 'success');
+  }
+  clearPropForm();
+  renderProps();
+  reconcilePropIds();
+}
+
+function editProp(i) {
+  const p = props[i];
+  document.getElementById('propEditId').value = p.id;
+  document.getElementById('propType').value = p.type;
+  document.getElementById('propExtension').value = p.extension;
+  document.getElementById('propCapacity').value = p.capacity;
+  document.getElementById('propNotes').value = p.notes;
+  document.getElementById('propFormTitle').textContent = 'Edit Prop';
+  document.getElementById('propType').focus();
+}
+
+// After prop library changes, fix up any zone levelsBelow entries whose propId
+// no longer exists in the library — reassign them to the current default.
+function reconcilePropIds() {
+  const validIds = new Set(props.map(p => p.id));
+  const defaultId = getDefaultPropId();
+  levels.forEach(lev => {
+    lev.zones.forEach(zone => {
+      zone.levelsBelow.forEach(bl => {
+        if (bl.propId && !validIds.has(bl.propId)) {
+          bl.propId = defaultId;
+          bl.propCapOverride = null;
+        }
+        // Also assign default if propId is null and props now exist
+        if (!bl.propId && defaultId) {
+          bl.propId = defaultId;
+        }
+      });
+    });
+  });
+  markDirty();
+}
+
+function removeProp(i) {
+  props.splice(i, 1);
+  reconcilePropIds();
+  renderProps();
+  showToast('Prop removed', 'info');
+}
+
+function clearPropForm() {
+  document.getElementById('propEditId').value = '';
+  document.getElementById('propType').value = '';
+  document.getElementById('propExtension').value = '';
+  document.getElementById('propCapacity').value = '';
+  document.getElementById('propNotes').value = '';
+  document.getElementById('propFormTitle').textContent = 'Add Prop';
+}
+
+function togglePropDefault(i) {
+  props.forEach((p, j) => p.isDefault = (j === i && !p.isDefault));
+  renderProps();
+}
+
+// ════════════════════════════════════════════════
+//  CALCULATION ENGINE  (calls back-end API)
+// ════════════════════════════════════════════════
+async function runCalc() {
+  // ── PRE-FLIGHT (client-side only — no engineering logic) ──────────────────
+  if (props.length === 0) {
+    showToast('Cannot calculate — prop library is empty.', 'error'); return;
+  }
+  const levelsWithZones = levels.filter(l => !isBaseLevel(l) && l.zones.length > 0);
+  if (levelsWithZones.length === 0) {
+    showToast('Cannot calculate — no zones defined.', 'error'); return;
+  }
+
+  // ── BUILD PAYLOAD ─────────────────────────────────────────────────────────
+  const payload = {
+    concDensity: project.concDensity,
+    maxSpacing:  project.maxSpacing,
+    levels:      levels,
+    props:       props,
+  };
+
+  // ── CALL API ──────────────────────────────────────────────────────────────
+  const btn = document.getElementById('calcBtn');
+  btn.textContent = '⏳ Calculating…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(API_URL + '/calculate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    if (data.errors && data.errors.length > 0) {
+      showToast(data.errors[0], 'error');
+      return;
+    }
+
+    calcResults = data.results;
+    renderEngineerView();
+    renderBuilderView();
+    showToast(`Calculation complete — ${calcResults.length} pour scenario${calcResults.length !== 1 ? 's' : ''}`, 'success');
+    updateSummary();
+    updateCalcBtn();
+    // Save results to Supabase
+    const activeP = projectStore.find(x => x.id === activeProjectId);
+    if (activeP) { saveActiveProject(); saveProjectToSupabase(activeP); }
+
+  } catch (err) {
+    showToast(`API error: ${err.message}`, 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    updateCalcBtn();
+  }
+}
+
+// ════════════════════════════════════════════════
+//  ENGINEER VIEW
+// ════════════════════════════════════════════════
+function renderEngineerView() {
+  document.getElementById('engProjName').textContent = project.name;
+  document.getElementById('engJobNo').textContent = 'Job No. ' + project.jobNo;
+  document.getElementById('engDensity').value = project.concDensity;
+  document.getElementById('engSpacing').value = project.maxSpacing;
+
+  if (!calcResults || calcResults.length === 0) {
+    document.getElementById('engineerMain').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚙</div>
+        <div class="empty-text">Configure levels & zones, then click Calculate</div>
+        <div class="empty-hint">Results will appear here</div>
+      </div>`;
+    document.getElementById('engPoursBody').innerHTML = `<div style="font-size:11px;color:var(--text-muted)">No results yet</div>`;
+    return;
+  }
+
+  // Guard: if results reference levels that no longer exist, treat as stale
+  const currentLevelNamesEng = new Set(levels.map(l => l.name));
+  if (calcResults.some(r => !currentLevelNamesEng.has(r.levelName))) {
+    calcResults = null;
+    updateCalcBtn();
+    document.getElementById('engineerMain').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Project changed</div><div class="empty-hint">Click Calculate to update results</div></div>`;
+    document.getElementById('engPoursBody').innerHTML = `<div style="font-size:11px;color:var(--text-muted)">Recalculate needed</div>`;
+    return;
+  }
+
+  // Sidebar pour list — Pass/Fail only, clickable links to edit zone
+  let poursHtml = '';
+  [...calcResults].reverse().forEach((r) => {
+    const pass = !r.isNP;
+    const cl = pass ? 'var(--tg)' : 'var(--np)';
+    const badge = pass ? 'PASS' : 'FAIL';
+    // Find the level id so we can navigate to its zones page
+    const lev = levels.find(l => l.name === r.levelName);
+    const levId = lev ? lev.id : null;
+    const linkAttr = levId ? `onclick="showPage('levels');openZones('${levId}')" style="cursor:pointer"` : '';
+    poursHtml += `
+      <div class="sidebar-pour-item" ${linkAttr} title="${levId ? 'Click to edit zones for ' + esc(r.levelName) : ''}">
+        <span style="flex:1">${esc(r.label)}</span>
+        <span style="color:${cl};font-weight:600;font-size:10px;flex-shrink:0">${badge}</span>
+        ${levId ? `<span style="color:var(--text-dim);font-size:9px;flex-shrink:0;margin-left:4px">✎</span>` : ''}
+      </div>`;
+  });
+  document.getElementById('engPoursBody').innerHTML = poursHtml || `<div style="font-size:11px;color:var(--text-muted)">No results</div>`;
+
+  // Status bar
+  const npCount = calcResults.filter(r => r.isNP).length;
+  const tgCount = calcResults.filter(r => r.isTG && !r.isNP).length;
+
+  // Build all level names that appear below any pour
+  const allBelowNames = [];
+  levels.forEach(l => { if (!allBelowNames.includes(l.name)) allBelowNames.push(l.name); });
+
+  // helper: get prop label for a zone/level entry
+  function getPropLabel(r, levelName) {
+    const lev = levels.find(l => l.name === r.levelName);
+    if (!lev) return '—';
+    const zone = lev.zones.find(z => z.name === r.zoneName);
+    if (!zone) return '—';
+    const bl = zone.levelsBelow.find(b => {
+      const bl2 = levels.find(l => l.id === b.levelId);
+      return bl2 && bl2.name === levelName;
+    });
+    if (!bl || !bl.active) return '—';
+    const prop = props.find(p => p.id === bl.propId);
+    return prop ? prop.type : '—';
+  }
+
+  // helper: get slab capacity for a zone/level entry
+  function getSlabCap(r, levelName) {
+    const entry = r.levels.find(l => l.name === levelName);
+    return entry ? entry.capacity : null;
+  }
+
+  const rowNames = [...new Set(levels.map(l=>l.name))].reverse();
+
+  // shared column headers
+  const colHeaders = calcResults.map(r => {
+    const lev = levels.find(l => l.name === r.levelName);
+    const levId = lev ? lev.id : null;
+    const linkStart = levId ? `<a onclick="showPage('levels');openZones('${levId}')" style="cursor:pointer;color:var(--accent);text-decoration:none" title="Edit zones for ${esc(r.levelName)}">` : '<span>';
+    const linkEnd = levId ? '</a>' : '</span>';
+    return `<th class="col-pour">${linkStart}${esc(r.levelName)}<br><span style="font-weight:400;font-size:9px;color:var(--text-muted)">${esc(r.zoneName)}</span>${linkEnd}</th>`;
+  }).join('');
+
+  // ── Matrices side-by-side wrapper ─────────────────────────────────────────
+  let matHtml = `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">`;
+
+  // ── 1. Prop Spacing Matrix ─────────────────────────────────────────────────
+  matHtml += `<div style="flex:1;min-width:300px">
+    <div class="results-title">Prop Spacing <span class="tag">m c/c</span></div>
+    <div class="results-sub">Min spacing at each back-prop level. Green = OK, Orange = tight (&lt;1.2m), Red = Fail</div>
+    <div class="matrix-container">
+      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+
+  rowNames.forEach(levelName => {
+    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
+    calcResults.forEach(r => {
+      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      if (entry.status === 'Fail' || r.isNP) { matHtml += `<td class="cell-np">Fail</td>`; return; }
+      const sp = entry.propSpacing;
+      const cls = !sp ? 'cell-empty' : sp < 1.2 ? 'cell-warn' : 'cell-ok';
+      matHtml += `<td class="${cls}">${sp ? sp.toFixed(2) : '—'}</td>`;
+    });
+    matHtml += `</tr>`;
+  });
+  matHtml += `</tbody></table></div></div>`;
+
+  // ── 2. Prop Type Matrix ────────────────────────────────────────────────────
+  matHtml += `<div style="flex:1;min-width:300px">
+    <div class="results-title">Prop Type <span class="tag">LIBRARY</span></div>
+    <div class="results-sub">Prop selected at each back-prop level for each pour/zone</div>
+    <div class="matrix-container">
+      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+
+  rowNames.forEach(levelName => {
+    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
+    calcResults.forEach(r => {
+      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      const label = getPropLabel(r, levelName);
+      const cls = label === '—' ? 'cell-empty' : 'cell-ok';
+      matHtml += `<td class="${cls}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(label)}">${esc(label)}</td>`;
+    });
+    matHtml += `</tr>`;
+  });
+  matHtml += `</tbody></table></div></div>`;
+
+  matHtml += `</div>`; // end side-by-side row 1
+
+  // ── Second row: Cumulative Load + Slab Capacity ───────────────────────────
+  matHtml += `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:20px">`;
+
+  // ── 3. Cumulative Load Matrix (with red for fail) ─────────────────────────
+  matHtml += `<div style="flex:1;min-width:300px">
+    <div class="results-title">Cumulative Load <span class="tag">kPa</span></div>
+    <div class="results-sub">Cumulative wet load at each level. Red = unresolved load (Fail)</div>
+    <div class="matrix-container">
+      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+
+  rowNames.forEach(levelName => {
+    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
+    calcResults.forEach(r => {
+      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">${r.totalLoad.toFixed(2)}</td>`; return; }
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      const load = entry.cumulativeLoad;
+      let cls;
+      if (r.isNP) {
+        cls = 'cell-np';
+      } else if (load <= 0) {
+        cls = 'cell-tg';
+      } else if (load > r.totalLoad * 0.8) {
+        cls = 'cell-warn';
+      } else {
+        cls = 'cell-ok';
+      }
+      matHtml += `<td class="${cls}">${load.toFixed(2)}</td>`;
+    });
+    matHtml += `</tr>`;
+  });
+  matHtml += `</tbody></table></div></div>`;
+
+  // ── 4. Slab Capacity Matrix ────────────────────────────────────────────────
+  matHtml += `<div style="flex:1;min-width:300px">
+    <div class="results-title">Slab Capacity <span class="tag">kPa</span></div>
+    <div class="results-sub">Slab capacity at each back-prop level for each pour/zone</div>
+    <div class="matrix-container">
+      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+
+  rowNames.forEach(levelName => {
+    const isBaseRow = levels.length > 0 && levels[0].name === levelName;
+    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
+    calcResults.forEach(r => {
+      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      // Base level: show ∞ symbol since it has effectively infinite capacity
+      if (isBaseRow) { matHtml += `<td class="cell-tg" style="font-size:13px">∞</td>`; return; }
+      const cap = entry.capacity;
+      const cls = cap === null ? 'cell-empty' : 'cell-ok';
+      matHtml += `<td class="${cls}">${cap !== null ? cap.toFixed(2) : '—'}</td>`;
+    });
+    matHtml += `</tr>`;
+  });
+  matHtml += `</tbody></table></div></div>`;
+
+  matHtml += `</div>`; // end side-by-side row 2
+
+  // ── Pour Scenario Detail cards ─────────────────────────────────────────────
+  matHtml += `<div class="results-title" style="margin-top:20px">Pour Scenario Detail</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
+
+  calcResults.forEach(r => {
+    const statusCls = r.isNP ? 'fail' : 'pass';
+    const statusTxt = r.isNP ? 'FAIL' : 'PASS';
+    const resolutionColour = r.isNP ? 'var(--np)' : 'var(--tg)';
+    const resolutionLabel = r.isNP ? 'Fail' : 'Pass';
+    matHtml += `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700">${esc(r.label)}</span>
+          <span class="pass-badge ${statusCls}">${statusTxt}</span>
+        </div>
+        <div style="padding:12px 14px">
+          <div class="info-row"><span class="info-key">Thickness</span><span class="info-val">${r.thickness} mm</span></div>
+          <div class="info-row"><span class="info-key">Slab self-weight</span><span class="info-val">${r.slabLoad.toFixed(2)} kPa</span></div>
+          <div class="info-row"><span class="info-key">Total wet load</span><span class="info-val">${r.totalLoad.toFixed(2)} kPa</span></div>
+          <div class="info-row"><span class="info-key">Back-prop levels</span><span class="info-val">${r.levels.length}</span></div>
+          <div class="info-row"><span class="info-key">Resolution</span><span class="info-val" style="color:${resolutionColour};font-weight:600">${resolutionLabel}</span></div>
+          ${r.isNP ? `<div style="margin-top:8px;padding:8px;background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2);border-radius:5px;color:var(--np);font-size:10px">⚠ ${r.failReason || 'Review back-propping arrangement.'}</div>` : ''}
+        </div>
+      </div>`;
+  });
+
+  matHtml += `</div>`;
+  document.getElementById('engineerMain').innerHTML = matHtml;
+}
+
+// ════════════════════════════════════════════════
+//  BUILDER VIEW
+// ════════════════════════════════════════════════
+function renderBuilderView() {
+  if (!calcResults || calcResults.length === 0) {
+    document.getElementById('builderPourList').innerHTML = `<div style="font-size:11px;color:var(--text-muted)">No results — click Calculate first</div>`;
+    document.getElementById('builderContent').innerHTML = `<div class="empty-state"><div class="empty-icon">👷</div><div class="empty-text">Calculate first</div></div>`;
+    return;
+  }
+
+  // Guard: if any result references a level that no longer exists, results are stale
+  const currentLevelNames = new Set(levels.map(l => l.name));
+  const isStale = calcResults.some(r => !currentLevelNames.has(r.levelName));
+  if (isStale) {
+    calcResults = null;
+    updateCalcBtn();
+    document.getElementById('builderPourList').innerHTML = `<div style="font-size:11px;color:var(--text-muted)">Levels changed — recalculate</div>`;
+    document.getElementById('builderContent').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Project changed</div><div class="empty-hint">Click Calculate to update results</div></div>`;
+    return;
+  }
+
+  // Pour list — reversed so highest level pours appear first (top of building down)
+  const listEl = document.getElementById('builderPourList');
+  listEl.innerHTML = '';
+  [...calcResults].reverse().forEach((r, revIdx) => {
+    const i = calcResults.length - 1 - revIdx; // real index for selection
+    const item = document.createElement('div');
+    item.className = `pour-item${i === selectedBuilderPour ? ' active' : ''}`;
+    const passColour = r.isNP ? 'var(--np)' : 'var(--tg)';
+    const passTxt = r.isNP ? 'Fail' : 'Pass';
+    item.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="pour-item-name">${esc(r.label)}</div>
+      <span style="color:${passColour};font-size:10px;font-weight:600">${passTxt}</span></div>
+      <div class="pour-item-sub">${r.thickness}mm · ${r.totalLoad.toFixed(1)} kPa</div>`;
+    item.onclick = () => { selectedBuilderPour = i; renderBuilderView(); };
+    listEl.appendChild(item);
+  });
+
+  renderBuilderVis(calcResults[selectedBuilderPour]);
+}
+
+function renderBuilderVis(pour) {
+  if (!pour) return;
+  const content = document.getElementById('builderContent');
+
+  // Build level visualisation (top to bottom display)
+  const levelsTopDown = [...levels].reverse();
+  const activeNames = new Set([pour.levelName, ...pour.levels.map(l=>l.name)]);
+
+  let visHtml = `<div class="building-vis-wrap">
+    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:14px;color:var(--text-muted)">
+      Back-propping arrangement for <span style="color:var(--text)">${esc(pour.label)}</span>
+    </div>
+    <div class="builder-legend">
+      <div class="legend-item"><div class="legend-swatch" style="color:var(--wet);background:rgba(77,168,255,0.2)"></div>Wet pour (active)</div>
+      <div class="legend-item"><div class="legend-swatch" style="color:var(--tg);background:rgba(56,201,110,0.2)"></div>Back-propped</div>
+      <div class="legend-item"><div class="legend-swatch" style="color:var(--warn);background:rgba(212,146,26,0.2)"></div>Tight (&lt;1.2m)</div>
+      <div class="legend-item"><div class="legend-swatch" style="color:var(--np);background:rgba(240,80,80,0.2)"></div>Fail</div>
+      <div class="legend-item"><div class="legend-swatch" style="color:var(--border);background:var(--surface2)"></div>Not involved</div>
+    </div>`;
+
+  levelsTopDown.forEach((lev, idx) => {
+    const isCurrent = lev.name === pour.levelName;
+    const entry = pour.levels.find(l => l.name === lev.name);
+
+    let barClass = 'slab-neutral';
+    let barText = lev.name;
+
+    if (isCurrent) {
+      barClass = 'slab-wet';
+      barText = `${lev.name} — WET POUR (${pour.thickness}mm)`;
+    } else if (entry) {
+      const sp = entry.propSpacing;
+      // Get prop name for this entry
+      const propObj = entry.propId ? props.find(p => p.id === entry.propId) : null;
+      const propName = propObj ? propObj.type : '—';
+      const spText = sp ? `${sp.toFixed(2)}m` : '—';
+      const detailSuffix = (propName !== '—' || sp) ? ` — ${propName} @ ${spText}` : '';
+
+      if (entry.status === 'Fail') {
+        barClass = 'slab-np';
+        barText = `${lev.name} — Fail`;
+      } else if (sp && sp < 1.2) {
+        barClass = 'slab-warn';
+        barText = `${lev.name}${detailSuffix}`;
+      } else if (sp) {
+        barClass = 'slab-ok';
+        barText = `${lev.name}${detailSuffix}`;
+      }
+    }
+
+    visHtml += `<div class="vis-level">
+      <div class="vis-label">${esc(lev.name)}</div>
+      <div class="vis-bar ${barClass}">${barText}</div>
+    </div>`;
+
+    // Prop lines between active back-prop levels
+    if (entry && !isCurrent && entry.propSpacing) {
+      const propCount = Math.min(12, Math.floor(3.0 / entry.propSpacing) + 2);
+      visHtml += `<div class="vis-props">`;
+      for (let p = 0; p < propCount; p++) visHtml += `<div class="vis-prop-line" style="height:${8+p%4*2}px"></div>`;
+      visHtml += `</div>`;
+    }
+  });
+
+  visHtml += `</div>`;
+
+  // Summary — 9. Pass/Fail only, no governing prop spacing
+  const statusCls = pour.isNP ? 'fail' : 'pass';
+  const statusTxt = pour.isNP ? 'FAIL' : 'PASS';
+
+  visHtml += `<div class="summary-panel">
+    <div class="summary-panel-header">
+      ${esc(pour.label)}
+      <span class="pass-badge ${statusCls}">${statusTxt}</span>
+    </div>
+    <div class="summary-body">
+      <div class="info-row"><span class="info-key">Wet thickness</span><span class="info-val">${pour.thickness} mm</span></div>
+      <div class="info-row"><span class="info-key">Slab self-weight</span><span class="info-val">${pour.slabLoad.toFixed(2)} kPa</span></div>
+      <div class="info-row"><span class="info-key">Total construction load</span><span class="info-val">${pour.totalLoad.toFixed(2)} kPa</span></div>
+      <div class="info-row"><span class="info-key">Back-prop stack depth</span><span class="info-val">${pour.levels.length} level${pour.levels.length !== 1 ? 's' : ''}</span></div>
+      ${pour.isNP ? `<div style="margin-top:10px;padding:10px;background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2);border-radius:6px;color:var(--np);font-size:11px">⚠ ${pour.failReason || 'Fail — review back-propping arrangement before proceeding.'}</div>` : ''}
+    </div>
+  </div>`;
+
+  content.innerHTML = visHtml;
+}
+
+// ════════════════════════════════════════════════
+//  PROJECT SETTINGS
+// ════════════════════════════════════════════════
+function openProjModal() {
+  document.getElementById('projName').value = project.name;
+  document.getElementById('jobNo').value = project.jobNo;
+  document.getElementById('prepBy').value = project.prepBy;
+  document.getElementById('concDensity').value = project.concDensity;
+  document.getElementById('maxSpacing').value = project.maxSpacing;
+  document.getElementById('projModal').classList.add('open');
+}
+
+function closeProjModal() {
+  document.getElementById('projModal').classList.remove('open');
+}
+
+function saveProjSettings() {
+  project.name = document.getElementById('projName').value;
+  project.jobNo = document.getElementById('jobNo').value;
+  project.prepBy = document.getElementById('prepBy').value;
+  project.concDensity = +document.getElementById('concDensity').value;
+  project.maxSpacing = +document.getElementById('maxSpacing').value;
+  // Sync sidebar inputs
+  if (document.getElementById('engDensity')) document.getElementById('engDensity').value = project.concDensity;
+  if (document.getElementById('engSpacing')) document.getElementById('engSpacing').value = project.maxSpacing;
+  document.getElementById('headerProjName').textContent = project.name;
+  document.getElementById('headerJobNo').textContent = project.jobNo;
+  calcResults = null;
+  markDirty();
+  closeProjModal();
+  showToast('Project settings saved', 'success');
+}
+
+// ════════════════════════════════════════════════
+//  SUMMARY
+// ════════════════════════════════════════════════
+function updateSummary() {
+  const totalZones = levels.reduce((a,l) => a + l.zones.length, 0);
+  document.getElementById('sumLevels').textContent = levels.length;
+  document.getElementById('sumZones').textContent = totalZones;
+  document.getElementById('sumProps').textContent = props.length;
+  if (!calcResults) {
+    document.getElementById('sumStatus').innerHTML = `<span class="chip chip-warn">Not calculated</span>`;
+  } else {
+    const np = calcResults.filter(r=>r.isNP).length;
+    if (np > 0) {
+      document.getElementById('sumStatus').innerHTML = `<span class="chip" style="background:rgba(240,80,80,0.1);color:var(--np);border-color:rgba(240,80,80,0.2)">${np} Fail</span>`;
+    } else {
+      document.getElementById('sumStatus').innerHTML = `<span class="chip chip-green">All pass</span>`;
+    }
+  }
+}
+
+// ════════════════════════════════════════════════
+//  IMPORT
+// ════════════════════════════════════════════════
+function openImport() { document.getElementById('importModal').classList.add('open'); }
+function closeImport() { document.getElementById('importModal').classList.remove('open'); }
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const thkSheet = wb.Sheets['THICKNESS'];
+      const capSheet = wb.Sheets['CAPACITY'];
+
+      if (!thkSheet) {
+        showToast('No THICKNESS sheet found', 'error');
+        closeImport(); return;
+      }
+
+      const thkData = XLSX.utils.sheet_to_json(thkSheet, { header: 1, defval: null });
+      const capData = capSheet ? XLSX.utils.sheet_to_json(capSheet, { header: 1, defval: null }) : null;
+
+      const thicknesses = {}, capacities = {};
+      const headerRow = thkData[0] || [];
+
+      thkData.slice(2).forEach(row => {
+        const name = String(row[0] || '').trim();
+        if (!name || name === 'LEVEL' || name === 'TYPE') return;
+        const colIdx = headerRow.findIndex(h => h && String(h).trim() === name);
+        if (colIdx >= 0 && row[colIdx] && row[colIdx] !== 'F/W') {
+          thicknesses[name] = Number(row[colIdx]);
+        } else {
+          for (let c = 1; c < row.length; c++) {
+            if (row[c] !== null && row[c] !== 'F/W' && !isNaN(Number(row[c]))) {
+              thicknesses[name] = Number(row[c]); break;
+            }
+          }
+        }
+      });
+
+      if (capData) {
+        capData.slice(2).forEach(row => {
+          const name = String(row[0] || '').trim();
+          if (!name) return;
+          const colIdx = (capData[0] || []).findIndex(h => h && String(h).trim() === name);
+          if (colIdx >= 0 && row[colIdx] && row[colIdx] !== 'WET') {
+            capacities[name] = Number(row[colIdx]);
+          } else {
+            for (let c = 1; c < row.length; c++) {
+              if (row[c] !== null && row[c] !== 'WET' && !isNaN(Number(row[c]))) {
+                capacities[name] = Number(row[c]); break;
+              }
+            }
+          }
+        });
+      }
+
+      const rowLabels = thkData.slice(2).map(r => String(r[0] || '').trim()).filter(Boolean);
+      const orderedNames = [...new Set(rowLabels)].reverse();
+
+      levels = orderedNames.map((name, i) => {
+        const isGnd = name === levels[0]?.name || name.toUpperCase() === 'G';
+        const thk = thicknesses[name] || (isGnd ? 300 : 230);
+        const cap = capacities[name] || (isGnd ? 20 : 2.5);
+        return {
+          id: 'lv_' + uid(),
+          name, thickness: thk, slabCap: cap, addLoad: 3.0, zones: [],
+        };
+      });
+
+      // Create default zones
+      levels.forEach((lev, i) => {
+        if (!isBaseLevel(lev)) {
+          lev.zones = [makeDefaultZone(lev, i)];
+        }
+      });
+
+      renderLevels();
+      calcResults = null;
+      showToast(`Imported ${levels.length} levels from XLSX`, 'success');
+      closeImport();
+
+    } catch (err) {
+      showToast('Error reading file: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ════════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════════
+function exportResults() {
+  if (!calcResults || calcResults.length === 0) {
+    showToast('Run calculation first', 'error'); return;
+  }
+  const wb = XLSX.utils.book_new();
+
+  // Summary
+  const pourLabels = calcResults.map(r => r.label);
+  const rowNames = [...new Set(levels.map(l=>l.name))].reverse();
+
+  const summaryData = [['Level / Zone', ...pourLabels]];
+  rowNames.forEach(n => {
+    const row = [n];
+    calcResults.forEach(r => {
+      if (r.levelName === n) { row.push('WET'); return; }
+      const e = r.levels.find(l=>l.name===n);
+      row.push(e ? e.status : '');
+    });
+    summaryData.push(row);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'SUMMARY');
+
+  // Detail
+  const detailData = [['Zone', 'Thickness mm', 'Slab Load kPa', 'Total Load kPa', 'Gov Spacing', 'To Ground', 'Fail']];
+  calcResults.forEach(r => {
+    detailData.push([
+      r.label, r.thickness,
+      r.slabLoad.toFixed(2), r.totalLoad.toFixed(2),
+      r.maxSpacingAchieved ? r.maxSpacingAchieved.toFixed(2)+'m' : (r.isNP?'Fail':'To Ground'),
+      r.isTG?'YES':'NO', r.isNP?'YES':'NO',
+    ]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailData), 'DETAIL');
+
+  // Prop library
+  const propData = [['Type', 'Extension', 'Capacity kN', 'Notes', 'Default']];
+  props.forEach(p => propData.push([p.type, p.extension, p.capacity, p.notes, p.isDefault?'YES':'NO']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(propData), 'PROP LIBRARY');
+
+  XLSX.writeFile(wb, `${project.jobNo}_backpropping.xlsx`);
+  showToast('Exported to XLSX', 'success');
+}
+
+// ════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+// Auth is handled by Supabase — onAuthStateChange loads projects after login
+
+</script>
+<script>
+// Show auth screen immediately on load — prevent black page while Supabase checks session
+document.getElementById('authScreen').style.display = 'flex';
+</script>
+</body>
+</html>

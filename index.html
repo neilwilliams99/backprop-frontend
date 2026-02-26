@@ -982,6 +982,12 @@ header {
 .proj-new-label { font-size: 12px; }
 
 <body>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  document.body.innerHTML = "<div style="padding:40px;color:white;font-family:monospace;background:#0a0e13;font-size:14px"><h2 style="color:#f05050">JavaScript Error</h2><p>" + msg + "</p><p>Line: " + line + "</p><p>Source: " + src + "</p></div>";
+  return true;
+};
+</script>
 
 <!-- ══ AUTH SCREEN ══ -->
 <div id="authScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">

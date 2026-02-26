@@ -1394,13 +1394,24 @@ async function signOut() {
   document.getElementById('appShell').style.display = 'none';
 }
 
+// Fallback — if onAuthStateChange doesn't fire within 3s, show login
+const _authTimeout = setTimeout(() => {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+}, 3000);
+
 supa.auth.onAuthStateChange(async (event, session) => {
+  clearTimeout(_authTimeout);
   document.getElementById('loadingScreen').style.display = 'none';
   if (session && session.user) {
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';
-    await dbLoadProps();
-    await dbLoadProjects();
+    try {
+      await dbLoadProps();
+      await dbLoadProjects();
+    } catch(e) {
+      console.error('DB load error:', e);
+    }
     document.getElementById('projectListScreen').style.display = 'flex';
     document.getElementById('appShell').style.display = 'none';
     renderProjectList();
@@ -1412,6 +1423,14 @@ supa.auth.onAuthStateChange(async (event, session) => {
     document.getElementById('appShell').style.display = 'none';
   }
 });
+
+// Fallback: if onAuthStateChange hasn't fired after 3 seconds, show login screen
+setTimeout(() => {
+  if (document.getElementById('loadingScreen').style.display !== 'none') {
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+  }
+}, 3000);
 
 // ════════════════════════════════════════════════
 //  MULTI-PROJECT STATE

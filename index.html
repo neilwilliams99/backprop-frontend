@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-window.onerror = function(msg, src, line, col, err) {
-  document.body.style.cssText = 'background:#111;padding:40px;color:white;font-family:monospace;font-size:13px';
-  document.body.innerHTML = '<h2 style="color:red;margin-bottom:16px">App Error — Line ' + line + '</h2><p>' + msg + '</p>';
-  return true;
-};
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BackProp — IKB Engineering</title>
@@ -989,7 +982,6 @@ header {
 .proj-new-label { font-size: 12px; }
 
 <body>
-
 <!-- ══ AUTH SCREEN ══ -->
 <div id="authScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
   <div style="width:360px">
@@ -2739,9 +2731,7 @@ function showToast(msg, type = 'success') {
 // ════════════════════════════════════════════════
 // Auth is handled by Supabase — onAuthStateChange loads projects after login
 
-</script>
-<script>
-// Show auth screen immediately on load — prevent black page while Supabase checks session
+// Show auth screen immediately on load
 document.getElementById('authScreen').style.display = 'flex';
 </script>
 </body>

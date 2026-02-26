@@ -1044,6 +1044,7 @@ header {
     </button>
     <button class="btn btn-ghost" onclick="openImport()">⬆ Import</button>
     <button class="btn btn-ghost" onclick="exportResults()">⬇ Export</button>
+    <button class="btn btn-ghost" onclick="signOut()" style="font-size:10px" title="Sign out">⎋ Sign out</button>
     <button class="btn btn-accent" id="calcBtn" onclick="runCalc()">▶ Calculate</button>
   </div>
 </header>
@@ -1386,10 +1387,12 @@ supa.auth.onAuthStateChange(async (event, session) => {
   if (session && session.user) {
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';
+    await dbLoadProjects();
     document.getElementById('projectListScreen').style.display = 'flex';
     renderProjectList();
   } else {
     currentUser = null;
+    projectStore = [];
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('projectListScreen').style.display = 'none';
   }
@@ -1419,7 +1422,6 @@ function makeNewProjectData(name, jobNo) {
 function renderProjectList() {
   const grid = document.getElementById('projGrid');
   grid.innerHTML = '';
-
   projectStore.forEach(p => {
     const totalZones = p.levels.reduce((a,l) => a + l.zones.length, 0);
     const npCount = p.calcResults ? p.calcResults.filter(r=>r.isNP).length : 0;
@@ -1440,8 +1442,6 @@ function renderProjectList() {
     card.onclick = () => openProject(p.id);
     grid.appendChild(card);
   });
-
-  // New project card
   const newCard = document.createElement('div');
   newCard.className = 'proj-card proj-card-new';
   newCard.innerHTML = `<div class="proj-new-icon">+</div><div class="proj-new-label">New Project</div>`;
@@ -1449,31 +1449,75 @@ function renderProjectList() {
   grid.appendChild(newCard);
 }
 
-function createProject() {
+// ── Supabase save/load ──
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const p = projectStore.find(x => x.id === activeProjectId);
+    if (p) { saveActiveProject(); dbSaveProject(p); }
+  }, 2000);
+}
+
+async function dbLoadProjects() {
+  if (!currentUser) return;
+  const { data, error } = await supa.from('projects').select('*').order('updated_at', { ascending: false });
+  if (error) { console.error('Load error:', error); return; }
+  projectStore = (data || []).map(row => ({
+    id:          row.id,
+    _supaId:     row.id,
+    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', concDensity: 24, maxSpacing: 3.0, ...(row.data.project || {}) },
+    levels:      row.data.levels      || [],
+    calcResults: row.data.calcResults || null,
+  }));
+  const withProps = data && data.find(r => r.data.props && r.data.props.length > 0);
+  if (withProps) props = withProps.data.props;
+}
+
+async function dbSaveProject(p) {
+  if (!currentUser) return;
+  const payload = {
+    user_id: currentUser.id,
+    name:    p.project.name,
+    job_no:  p.project.jobNo  || '',
+    prep_by: p.project.prepBy || '',
+    data:    { project: p.project, levels: p.levels, calcResults: p.calcResults, props },
+  };
+  if (p._supaId) {
+    const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);
+    if (error) console.error('Save error:', error);
+    else showToast('Saved', 'success');
+  } else {
+    const { data, error } = await supa.from('projects').insert(payload).select().single();
+    if (error) { console.error('Insert error:', error); return; }
+    p._supaId = data.id;
+    p.id      = data.id;
+    showToast('Project saved', 'success');
+  }
+}
+
+async function createProject() {
   const name = prompt('Project name:', 'Project ' + (projectStore.length + 1));
-  if (name === null) return; // cancelled
+  if (name === null) return;
   const jobNo = prompt('Job number (optional):', '');
   if (jobNo === null) return;
   const p = makeNewProjectData(name, jobNo);
-  projectStore.push(p);
+  p._supaId = null;
+  projectStore.unshift(p);
+  await dbSaveProject(p);
   openProject(p.id);
 }
 
 function openProject(id) {
   const p = projectStore.find(x => x.id === id);
   if (!p) return;
-  // Save current state back if we had an active project
   if (activeProjectId) saveActiveProject();
-  // Load this project into globals
   activeProjectId = id;
-  project = p.project;
-  levels = p.levels;
-  // props intentionally NOT loaded from project — props are user-level/global
+  project     = p.project;
+  levels      = p.levels;
   calcResults = p.calcResults;
-  // Update header
   document.getElementById('headerProjName').textContent = project.name;
-  document.getElementById('headerJobNo').textContent = project.jobNo;
-  // Show workspace
+  document.getElementById('headerJobNo').textContent    = project.jobNo;
   document.getElementById('projectListScreen').style.display = 'none';
   showPage('levels');
   updateCalcBtn();
@@ -1481,12 +1525,7 @@ function openProject(id) {
 
 function saveActiveProject() {
   const p = projectStore.find(x => x.id === activeProjectId);
-  if (p) {
-    p.project = project;
-    p.levels = levels;
-    // props intentionally NOT saved to project — props are user-level/global
-    p.calcResults = calcResults;
-  }
+  if (p) { p.project = project; p.levels = levels; p.calcResults = calcResults; }
 }
 
 function showProjectList() {
@@ -1495,9 +1534,11 @@ function showProjectList() {
   renderProjectList();
 }
 
-function deleteProject(id) {
+async function deleteProject(id) {
   if (!confirm('Delete this project? This cannot be undone.')) return;
-  projectStore = projectStore.filter(p => p.id !== id);
+  const p = projectStore.find(x => x.id === id);
+  if (p && p._supaId) await supa.from('projects').delete().eq('id', p._supaId);
+  projectStore = projectStore.filter(x => x.id !== id);
   if (activeProjectId === id) {
     activeProjectId = null;
     document.getElementById('projectListScreen').style.display = 'flex';
@@ -1583,6 +1624,7 @@ function updateCalcBtn() {
 function markDirty() {
   calcResults = null;
   updateCalcBtn();
+  scheduleSave();
 }
 
 // ════════════════════════════════════════════════
@@ -2240,6 +2282,9 @@ function runCalc() {
   showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''}`, 'success');
   updateSummary();
   updateCalcBtn();
+  // Save results to database
+  const activeP = projectStore.find(x => x.id === activeProjectId);
+  if (activeP) { saveActiveProject(); dbSaveProject(activeP); }
 }
 
 // ════════════════════════════════════════════════
@@ -2817,12 +2862,7 @@ function showToast(msg, type = 'success') {
 // ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
-
-// Props are global/user-level — already seeded above
-// Create a default starter project (empty levels) and show the project list
-const _defaultProj = makeNewProjectData('Project 10354', '10354');
-projectStore.push(_defaultProj);
-renderProjectList();
+// Projects loaded from Supabase after login via onAuthStateChange
 
 </script>
 </body>

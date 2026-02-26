@@ -5,9 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BackProp — IKB Engineering</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
 
 :root {
   --bg: #0a0e13;
@@ -980,54 +979,18 @@ header {
 .proj-card-new:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,160,32,0.03); }
 .proj-new-icon { font-size: 28px; opacity: 0.4; }
 .proj-new-label { font-size: 12px; }
-
-<body><div style="position:fixed;top:0;left:0;right:0;padding:10px;background:yellow;color:black;font-size:20px;z-index:99999;font-family:sans-serif">PAGE IS LOADING...</div>
-<!-- ══ AUTH SCREEN ══ -->
-<div id="authScreen" style="display:flex;position:fixed;inset:0;background:#1a1a2e;z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:0">
-  <div style="width:360px">
-    <div style="text-align:center;margin-bottom:32px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px">BACK<span style="color:var(--accent)">PROP</span></div>
-      <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-muted);letter-spacing:1px;margin-top:4px">BY IKB ENGINEERING</div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px">
-      <div style="display:flex;gap:0;margin-bottom:24px;background:var(--bg);border-radius:6px;padding:3px;border:1px solid var(--border)">
-        <button id="tabSignin" onclick="switchAuthTab('signin')" style="flex:1;padding:6px;border:none;border-radius:4px;background:var(--surface2);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Sign In</button>
-        <button id="tabSignup" onclick="switchAuthTab('signup')" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:var(--text-muted);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer">Sign Up</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
-          <input id="authEmail" type="email" placeholder="you@example.com"
-            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none">
-        </div>
-        <div>
-          <label style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
-          <input id="authPassword" type="password" placeholder="••••••••"
-            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none"
-            onkeydown="if(event.key==='Enter')handleAuth()">
-        </div>
-        <div id="authError" style="display:none;color:var(--np);font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px;border:1px solid rgba(240,80,80,0.2)"></div>
-        <button onclick="handleAuth()" style="margin-top:4px;padding:10px;background:var(--accent);color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:0.5px" id="authBtn">Sign In</button>
-      </div>
-      <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:var(--tg);font-family:'DM Mono',monospace"></div>
-    </div>
-    <div style="text-align:center;margin-top:16px;font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace">
-      Back-propping design tool · IKB Engineering
-    </div>
-  </div>
-</div>
+</style>
+</head>
+<body>
 
 <!-- ══ PROJECT LIST SCREEN ══ -->
-<div id="projectListScreen" style="display:none">
+<div id="projectListScreen">
   <div class="proj-screen-header">
     <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
     <div class="proj-screen-sub">IKB Engineering — Back-Propping Design Tool</div>
   </div>
   <div class="proj-grid" id="projGrid"></div>
 </div>
-
-<!-- ══ APP SHELL (shown after login) ══ -->
-<div id="appShell" style="display:none;flex-direction:column;height:100vh">
 
 <!-- ══ HEADER ══ -->
 <header>
@@ -1050,9 +1013,6 @@ header {
     </button>
     <button class="btn btn-ghost" onclick="openImport()">⬆ Import</button>
     <button class="btn btn-ghost" onclick="exportResults()">⬇ Export</button>
-    <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-    <span id="headerUserEmail" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-    <button class="btn btn-ghost" onclick="signOut()" title="Sign out" style="font-size:10px">⎋ Sign out</button>
     <button class="btn btn-accent" id="calcBtn" onclick="runCalc()">▶ Calculate</button>
   </div>
 </header>
@@ -1340,96 +1300,21 @@ header {
 
 </div><!-- /app -->
 
-</div><!-- /appShell -->
-
 <script>
 // ════════════════════════════════════════════════
-//  CONFIGURATION
+//  MULTI-PROJECT STATE
 // ════════════════════════════════════════════════
-const API_URL  = 'https://backprop-api.onrender.com';
-const SUPA_URL = 'https://kwbmiyjwmsuqllbqwudo.supabase.co';
-const SUPA_KEY = 'sb_publishable_J0mPoTMrkZEj-9Nq2x-VWw_SkhRxr28';
-const { createClient } = supabase;
-const supa     = createClient(SUPA_URL, SUPA_KEY);
-let currentUser = null;
 
-// ════════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════════
-let authMode = 'signin';
-
-function switchAuthTab(mode) {
-  authMode = mode;
-  document.getElementById('tabSignin').style.background = mode === 'signin' ? 'var(--surface2)' : 'transparent';
-  document.getElementById('tabSignin').style.color      = mode === 'signin' ? 'var(--text)'     : 'var(--text-muted)';
-  document.getElementById('tabSignup').style.background = mode === 'signup' ? 'var(--surface2)' : 'transparent';
-  document.getElementById('tabSignup').style.color      = mode === 'signup' ? 'var(--text)'     : 'var(--text-muted)';
-  document.getElementById('authBtn').textContent        = mode === 'signin' ? 'Sign In' : 'Create Account';
-  document.getElementById('authError').style.display   = 'none';
-  document.getElementById('authMsg').style.display     = 'none';
-}
-
-async function handleAuth() {
-  const email    = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const errEl    = document.getElementById('authError');
-  const msgEl    = document.getElementById('authMsg');
-  errEl.style.display = 'none';
-  msgEl.style.display = 'none';
-  if (!email || !password) {
-    errEl.textContent = 'Please enter your email and password.';
-    errEl.style.display = 'block'; return;
-  }
-  document.getElementById('authBtn').textContent = '…';
-  if (authMode === 'signup') {
-    const { error } = await supa.auth.signUp({ email, password });
-    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
-    else { msgEl.textContent = 'Account created! Check your email to confirm, then sign in.'; msgEl.style.display = 'block'; }
-  } else {
-    const { error } = await supa.auth.signInWithPassword({ email, password });
-    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
-  }
-  document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
-}
-
-async function signOut() {
-  await supa.auth.signOut();
-  currentUser  = null;
-  projectStore = [];
-  document.getElementById('authScreen').style.display       = 'flex';
-  document.getElementById('projectListScreen').style.display = 'none';
-  document.getElementById('appShell').style.display         = 'none';
-}
-
-supa.auth.onAuthStateChange(async (event, session) => {
-  if (session?.user) {
-    currentUser = session.user;
-    document.getElementById('authScreen').style.display        = 'none';
-    document.getElementById('headerUserEmail').textContent     = currentUser.email;
-    await loadProjects();
-    document.getElementById('projectListScreen').style.display = 'flex';
-    renderProjectList();
-  } else {
-    currentUser = null;
-    document.getElementById('authScreen').style.display        = 'flex';
-    document.getElementById('projectListScreen').style.display = 'none';
-    document.getElementById('appShell').style.display          = 'none';
-  }
-});
-
-// ════════════════════════════════════════════════
-//  MULTI-PROJECT STATE + SUPABASE PERSISTENCE
-// ════════════════════════════════════════════════
-let projectStore    = [];
+// Each project stored as: { id, project, levels, props, calcResults }
+let projectStore = [];
 let activeProjectId = null;
-let saveTimer       = null;
 
 function makeNewProjectData(name, jobNo) {
   const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
   return {
     id,
-    _supaId: null,
     project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0 },
+    // Always seed with base level at index 0 — infinite capacity, not deletable
     levels: [
       { id: 'base_' + id, name: 'Ground', thickness: 0, slabCap: 100000, addLoad: 0, zones: [], isBase: true }
     ],
@@ -1437,57 +1322,15 @@ function makeNewProjectData(name, jobNo) {
   };
 }
 
-async function loadProjects() {
-  if (!currentUser) return;
-  const { data, error } = await supa.from('projects').select('*').order('updated_at', { ascending: false });
-  if (error) { console.error('Load error:', error); return; }
-  projectStore = (data || []).map(row => ({
-    id:          row.id,
-    _supaId:     row.id,
-    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', ...row.data.project },
-    levels:      row.data.levels      || [],
-    calcResults: row.data.calcResults || null,
-  }));
-  const withProps = data?.find(r => r.data.props && r.data.props.length > 0);
-  if (withProps) props = withProps.data.props;
-}
-
-async function saveProjectToSupabase(p) {
-  if (!currentUser) return;
-  const payload = {
-    user_id: currentUser.id,
-    name:    p.project.name,
-    job_no:  p.project.jobNo  || '',
-    prep_by: p.project.prepBy || '',
-    data:    { project: p.project, levels: p.levels, calcResults: p.calcResults, props },
-  };
-  if (p._supaId) {
-    const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);
-    if (error) console.error('Save error:', error);
-  } else {
-    const { data, error } = await supa.from('projects').insert(payload).select().single();
-    if (error) { console.error('Insert error:', error); return; }
-    p._supaId = data.id;
-    p.id      = data.id;
-  }
-}
-
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const p = projectStore.find(x => x.id === activeProjectId);
-    if (p) { saveActiveProject(); saveProjectToSupabase(p); }
-  }, 2000);
-}
-
 function renderProjectList() {
   const grid = document.getElementById('projGrid');
   grid.innerHTML = '';
+
   projectStore.forEach(p => {
-    const totalZones  = p.levels.reduce((a,l) => a + l.zones.length, 0);
-    const npCount     = p.calcResults ? p.calcResults.filter(r=>r.isNP).length : 0;
+    const totalZones = p.levels.reduce((a,l) => a + l.zones.length, 0);
+    const npCount = p.calcResults ? p.calcResults.filter(r=>r.isNP).length : 0;
     const statusColor = !p.calcResults ? 'var(--text-muted)' : npCount > 0 ? 'var(--np)' : 'var(--tg)';
-    const statusTxt   = !p.calcResults ? 'Not calculated'    : npCount > 0 ? `${npCount} Fail` : 'All pass';
+    const statusTxt = !p.calcResults ? 'Not calculated' : npCount > 0 ? `${npCount} Fail` : 'All pass';
     const card = document.createElement('div');
     card.className = 'proj-card';
     card.innerHTML = `
@@ -1503,6 +1346,8 @@ function renderProjectList() {
     card.onclick = () => openProject(p.id);
     grid.appendChild(card);
   });
+
+  // New project card
   const newCard = document.createElement('div');
   newCard.className = 'proj-card proj-card-new';
   newCard.innerHTML = `<div class="proj-new-icon">+</div><div class="proj-new-label">New Project</div>`;
@@ -1510,58 +1355,62 @@ function renderProjectList() {
   grid.appendChild(newCard);
 }
 
-async function createProject() {
-  const name  = prompt('Project name:', 'Project ' + (projectStore.length + 1));
-  if (name === null) return;
+function createProject() {
+  const name = prompt('Project name:', 'Project ' + (projectStore.length + 1));
+  if (name === null) return; // cancelled
   const jobNo = prompt('Job number (optional):', '');
   if (jobNo === null) return;
   const p = makeNewProjectData(name, jobNo);
-  projectStore.unshift(p);
-  await saveProjectToSupabase(p);
+  projectStore.push(p);
   openProject(p.id);
 }
 
 function openProject(id) {
   const p = projectStore.find(x => x.id === id);
   if (!p) return;
+  // Save current state back if we had an active project
   if (activeProjectId) saveActiveProject();
+  // Load this project into globals
   activeProjectId = id;
-  project     = p.project;
-  levels      = p.levels;
+  project = p.project;
+  levels = p.levels;
+  // props intentionally NOT loaded from project — props are user-level/global
   calcResults = p.calcResults;
-  document.getElementById('headerProjName').textContent      = project.name;
-  document.getElementById('headerJobNo').textContent         = project.jobNo;
+  // Update header
+  document.getElementById('headerProjName').textContent = project.name;
+  document.getElementById('headerJobNo').textContent = project.jobNo;
+  // Show workspace
   document.getElementById('projectListScreen').style.display = 'none';
-  document.getElementById('appShell').style.display          = 'flex';
   showPage('levels');
   updateCalcBtn();
 }
 
 function saveActiveProject() {
   const p = projectStore.find(x => x.id === activeProjectId);
-  if (p) { p.project = project; p.levels = levels; p.calcResults = calcResults; }
+  if (p) {
+    p.project = project;
+    p.levels = levels;
+    // props intentionally NOT saved to project — props are user-level/global
+    p.calcResults = calcResults;
+  }
 }
 
 function showProjectList() {
   saveActiveProject();
-  document.getElementById('appShell').style.display          = 'none';
   document.getElementById('projectListScreen').style.display = 'flex';
   renderProjectList();
 }
 
-async function deleteProject(id) {
+function deleteProject(id) {
   if (!confirm('Delete this project? This cannot be undone.')) return;
-  const p = projectStore.find(x => x.id === id);
-  if (p?._supaId) await supa.from('projects').delete().eq('id', p._supaId);
-  projectStore = projectStore.filter(x => x.id !== id);
+  projectStore = projectStore.filter(p => p.id !== id);
   if (activeProjectId === id) {
     activeProjectId = null;
-    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('projectListScreen').style.display = 'flex';
   }
   renderProjectList();
   showToast('Project deleted', 'info');
 }
-
 
 // ════════════════════════════════════════════════
 //  STATE
@@ -1640,7 +1489,6 @@ function updateCalcBtn() {
 function markDirty() {
   calcResults = null;
   updateCalcBtn();
-  scheduleSave();
 }
 
 // ════════════════════════════════════════════════
@@ -2091,67 +1939,213 @@ function togglePropDefault(i) {
 }
 
 // ════════════════════════════════════════════════
-//  CALCULATION ENGINE  (calls back-end API)
+//  CALCULATION ENGINE
 // ════════════════════════════════════════════════
-async function runCalc() {
-  // ── PRE-FLIGHT (client-side only — no engineering logic) ──────────────────
+function runCalc() {
+  const density = project.concDensity;
+  const maxSp = project.maxSpacing;
+  const results = [];
+
+  // ── PRE-FLIGHT VALIDATION ────────────────────────────────────────────────
+  const validPropIds = new Set(props.map(p => p.id));
+
+  // Check 1: prop library must not be empty
   if (props.length === 0) {
-    showToast('Cannot calculate — prop library is empty.', 'error'); return;
+    showToast('Cannot calculate — prop library is empty. Add at least one prop before running.', 'error');
+    return;
   }
+
+  // Check 2: every active levelsBelow entry must reference a valid prop
+  const missingPropZones = [];
+  levels.forEach(lev => {
+    if (isBaseLevel(lev)) return;
+    lev.zones.forEach(zone => {
+      zone.levelsBelow.forEach(bl => {
+        if (!bl.active) return;
+        if (!bl.propId || !validPropIds.has(bl.propId)) {
+          missingPropZones.push(`${lev.name} · ${zone.name}`);
+        }
+      });
+    });
+  });
+
+  if (missingPropZones.length > 0) {
+    const unique = [...new Set(missingPropZones)];
+    showToast(
+      `Cannot calculate — no prop assigned in: ${unique.join(', ')}. Open each zone and select a prop for all active levels.`,
+      'error'
+    );
+    return;
+  }
+
+  // Check 3: at least one level with zones must exist
   const levelsWithZones = levels.filter(l => !isBaseLevel(l) && l.zones.length > 0);
   if (levelsWithZones.length === 0) {
-    showToast('Cannot calculate — no zones defined.', 'error'); return;
+    showToast('Cannot calculate — no zones defined. Add zones to at least one level first.', 'error');
+    return;
   }
+  // ── END PRE-FLIGHT ───────────────────────────────────────────────────────
 
-  // ── BUILD PAYLOAD ─────────────────────────────────────────────────────────
-  const payload = {
-    concDensity: project.concDensity,
-    maxSpacing:  project.maxSpacing,
-    levels:      levels,
-    props:       props,
-  };
+  // For each level (non-ground), for each zone
+  levels.forEach((lev, li) => {
+    if (isBaseLevel(lev)) return; // skip base level
+    if (lev.zones.length === 0) return;
 
-  // ── CALL API ──────────────────────────────────────────────────────────────
-  const btn = document.getElementById('calcBtn');
-  btn.textContent = '⏳ Calculating…';
-  btn.disabled = true;
+    lev.zones.forEach(zone => {
+      const thickM = zone.thickness / 1000;
+      const slabLoad = thickM * density;
+      const addLoad = zone.addLoad ?? lev.addLoad ?? 3.0;
+      const totalWetLoad = slabLoad + addLoad;
 
-  try {
-    const res = await fetch(API_URL + '/calculate', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      const pourResult = {
+        levelId: lev.id,
+        levelName: lev.name,
+        zoneName: zone.name,
+        label: `${lev.name} · ${zone.name}`,
+        thickness: zone.thickness,
+        slabLoad,
+        totalLoad: totalWetLoad,
+        levels: [],
+        maxSpacingAchieved: null,
+        isNP: false,
+        isTG: false,
+      };
+
+      // ── BACK-PROPPING LOGIC ──────────────────────────────────────────────
+      //
+      // Two distinct cases:
+      //
+      // CASE A — Props resolve to GROUND (T/G):
+      //   The full wet load is carried by props all the way down to the ground
+      //   slab. Intermediate slabs do NOT absorb any load — they simply transfer
+      //   the full wet load downward. Every back-propped level in the stack must
+      //   have props sized for the FULL wet load.
+      //
+      // CASE B — Props do NOT reach ground:
+      //   Each active slab absorbs its stated capacity, reducing the cumulative
+      //   load. If all load is absorbed before the bottom of the stack → OK.
+      //   If there is any remainder after the last active level → FAIL (N/P).
+      //   No prop spacing result is possible — user must add more load-bearing
+      //   levels or increase slab capacity.
+      //
+      // ─────────────────────────────────────────────────────────────────────
+
+      const activeBelowEntries = zone.levelsBelow.filter(b => b.active);
+
+      if (activeBelowEntries.length === 0) {
+        pourResult.isNP = true;
+        pourResult.failReason = 'No load-bearing levels selected.';
+      } else {
+        // Determine if stack reaches ground
+        const reachesGround = activeBelowEntries.some(b => {
+          const bl = levels.find(l => l.id === b.levelId);
+          return bl && isBaseLevel(bl);
+        });
+
+        if (reachesGround) {
+          // ── CASE A: T/G ─────────────────────────────────────────────────
+          // Every level in the stack (including intermediates) props the FULL
+          // wet load. Ground slab is recorded as T/G with no prop spacing.
+          pourResult.isTG = true;
+
+          activeBelowEntries.forEach(bl => {
+            const blev = levels.find(l => l.id === bl.levelId);
+            if (!blev) return;
+            const isGndLevel = isBaseLevel(blev);
+
+            // For base level AND intermediate levels in T/G case:
+            // props carry the FULL wet load. Compute spacing based on prop cap.
+            const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId);
+            const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
+            const cappedSpacing = Math.min(propSpacing, maxSp);
+            const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
+            if (status === 'Fail') pourResult.isNP = true;
+
+            pourResult.levels.push({
+              name: blev.name,
+              isGround: isGndLevel,
+              cumulativeLoad: totalWetLoad,
+              capacity: isGndLevel ? null : bl.slabCap,
+              propCap: propCapKN,
+              netLoad: isGndLevel ? 0 : totalWetLoad,
+              status,
+              propSpacing: cappedSpacing > 0 ? cappedSpacing : null,
+              propId: bl.propId,
+            });
+          });
+
+        } else {
+          // ── CASE B: Distributed across load-bearing slabs ────────────────
+          // Each slab absorbs its stated capacity. Any remainder after the last
+          // slab = FAIL (no prop spacing result possible).
+          let cumLoad = totalWetLoad;
+
+          activeBelowEntries.forEach(bl => {
+            const blev = levels.find(l => l.id === bl.levelId);
+            if (!blev) return;
+
+            const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId);
+            let propSpacing = null;
+            let status = '';
+
+            if (cumLoad > 0) {
+              const rawSpacing = Math.sqrt(propCapKN / cumLoad);
+              propSpacing = Math.min(rawSpacing, maxSp);
+              status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
+              if (propSpacing <= 0) pourResult.isNP = true;
+            } else {
+              // Load already fully absorbed higher up
+              status = 'no load';
+              propSpacing = null;
+            }
+
+            pourResult.levels.push({
+              name: blev.name,
+              isGround: false,
+              cumulativeLoad: cumLoad,
+              capacity: bl.slabCap,
+              propCap: propCapKN,
+              netLoad: Math.max(0, cumLoad - bl.slabCap),
+              status,
+              propSpacing,
+              propId: bl.propId,
+            });
+
+            cumLoad = Math.max(0, cumLoad - bl.slabCap);
+          });
+
+          // Check for remainder — any load not absorbed = FAIL
+          if (cumLoad > 0.01) {
+            pourResult.isNP = true;
+            pourResult.isTG = false;
+            pourResult.failReason = `Load not fully resolved — ${cumLoad.toFixed(2)} kPa remaining after the last load-bearing level. Add more load-bearing levels or increase slab capacity.`;
+            // Clear all prop spacings — no result is valid
+            pourResult.levels.forEach(l => {
+              l.status = 'Fail';
+              l.propSpacing = null;
+            });
+          } else {
+            pourResult.isTG = false; // resolved through slabs, not ground
+          }
+        }
+      }
+
+      const spacings = pourResult.levels
+        .filter(l => l.propSpacing !== null && l.propSpacing > 0)
+        .map(l => l.propSpacing);
+      pourResult.maxSpacingAchieved = (!pourResult.isNP && spacings.length > 0) ? Math.min(...spacings) : null;
+      pourResult.isNP = pourResult.isNP || pourResult.levels.some(l => l.status === 'Fail');
+
+      results.push(pourResult);
     });
+  });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Server error ${res.status}`);
-    }
-
-    const data = await res.json();
-
-    if (data.errors && data.errors.length > 0) {
-      showToast(data.errors[0], 'error');
-      return;
-    }
-
-    calcResults = data.results;
-    renderEngineerView();
-    renderBuilderView();
-    showToast(`Calculation complete — ${calcResults.length} pour scenario${calcResults.length !== 1 ? 's' : ''}`, 'success');
-    updateSummary();
-    updateCalcBtn();
-    // Save results to Supabase
-    const activeP = projectStore.find(x => x.id === activeProjectId);
-    if (activeP) { saveActiveProject(); saveProjectToSupabase(activeP); }
-
-  } catch (err) {
-    showToast(`API error: ${err.message}`, 'error');
-    console.error(err);
-  } finally {
-    btn.disabled = false;
-    updateCalcBtn();
-  }
+  calcResults = results;
+  renderEngineerView();
+  renderBuilderView();
+  showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''}`, 'success');
+  updateSummary();
+  updateCalcBtn();
 }
 
 // ════════════════════════════════════════════════
@@ -2729,10 +2723,13 @@ function showToast(msg, type = 'success') {
 // ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
-// Auth is handled by Supabase — onAuthStateChange loads projects after login
 
-// Show auth screen immediately on load
-document.getElementById('authScreen').style.display = 'flex';
+// Props are global/user-level — already seeded above
+// Create a default starter project (empty levels) and show the project list
+const _defaultProj = makeNewProjectData('Project 10354', '10354');
+projectStore.push(_defaultProj);
+renderProjectList();
+
 </script>
 </body>
 </html>

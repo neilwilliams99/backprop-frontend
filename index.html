@@ -872,21 +872,21 @@ header {
 
 /* ── TOAST ── */
 .toast {
-  position: fixed;
-  bottom:20px; right:20px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 11px 16px;
   font-size: 11px;
-  transform: translateY(60px);
+  transform: translateY(20px);
   opacity: 0;
   transition: all 0.25s;
-  z-index: 1000;
-  max-width: 280px;
+  max-width: 300px;
   pointer-events: none;
+  font-family: 'DM Mono', monospace;
+  line-height: 1.4;
 }
 .toast.show { transform:translateY(0); opacity:1; }
+.toast.hiding { transform:translateY(20px); opacity:0; }
 .toast.success { border-color:var(--tg); }
 .toast.error { border-color:var(--np); }
 .toast.info { border-color:var(--accent2); }
@@ -1059,7 +1059,7 @@ header {
 </header>
 
 <!-- ══ TOAST ══ -->
-<div class="toast" id="toast"></div>
+<div id="toastContainer" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column-reverse;gap:8px;z-index:9000;pointer-events:none"></div>
 
 <!-- ══ IMPORT MODAL ══ -->
 <div class="modal-overlay" id="importModal">
@@ -1402,6 +1402,8 @@ async function handleAuth() {
     }
   }
   document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+  // Clear password field after any attempt; clear email too on successful signup
+  document.getElementById('authPassword').value = '';
 }
 
 async function signOut() {
@@ -1631,11 +1633,7 @@ let project = {
 // Global working state — loaded from projectStore when a project is opened
 let levels = [];
 // props is USER-LEVEL — shared across all projects, not stored per-project
-let props = [
-  { id: 'p0', type: 'Acrow #2',        extension: '2.0–3.4m', capacity: 18, notes: '',               isDefault: false },
-  { id: 'p1', type: 'Acrow #3',        extension: '2.5–4.5m', capacity: 15, notes: '',               isDefault: false },
-  { id: 'p2', type: 'Heavy Prop (SGB)', extension: '3.0–5.5m', capacity: 55, notes: 'Shoring grade', isDefault: true  },
-];
+let props = []; // populated from user_props table on login
 let calcResults = null;
 let currentZoneLevelId = null;
 let selectedBuilderPour = 0;
@@ -2969,11 +2967,20 @@ function esc(s) {
     .replace(/"/g,'&quot;');
 }
 
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
+function showToast(msg, type = 'success', duration = 5000) {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
   t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
+  container.appendChild(t);
+  // Animate in
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  // Animate out then remove
+  setTimeout(() => {
+    t.classList.remove('show');
+    t.classList.add('hiding');
+    setTimeout(() => t.remove(), 300);
+  }, duration);
 }
 
 // ════════════════════════════════════════════════

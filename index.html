@@ -1375,12 +1375,31 @@ async function handleAuth() {
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
   document.getElementById('authBtn').textContent = '…';
   if (authMode === 'signup') {
-    const { error } = await supa.auth.signUp({ email, password });
-    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
-    else { msgEl.textContent = 'Account created! Check your email to confirm, then sign in.'; msgEl.style.display = 'block'; }
+    const { data, error } = await supa.auth.signUp({ email, password });
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.style.display = 'block';
+    } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+      // Supabase returns a fake success when email already exists — detect by empty identities
+      errEl.textContent = 'An account with this email already exists. Please sign in instead.';
+      errEl.style.display = 'block';
+      // Switch to sign in tab after a moment
+      setTimeout(() => setAuthMode('signin'), 1500);
+    } else {
+      msgEl.textContent = 'Account created! Check your email to confirm, then sign in.';
+      msgEl.style.display = 'block';
+    }
   } else {
     const { error } = await supa.auth.signInWithPassword({ email, password });
-    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+    if (error) {
+      // Make the error message more user-friendly
+      if (error.message.includes('Invalid login credentials')) {
+        errEl.textContent = 'Incorrect email or password.';
+      } else {
+        errEl.textContent = error.message;
+      }
+      errEl.style.display = 'block';
+    }
   }
   document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
 }
@@ -1425,6 +1444,9 @@ initAuth();
 supa.auth.onAuthStateChange(async (event, session) => {
   if (_authInitializing) return;
   if (event === 'SIGNED_IN' && session && session.user && !currentUser) {
+    if (window.location.hash.includes('access_token')) {
+      setTimeout(() => showToast('Email confirmed — welcome to BackProp!', 'success'), 800);
+    }
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('loadingScreen').style.display = 'none';
@@ -1514,8 +1536,7 @@ async function dbLoadProjects() {
     levels:      row.data.levels      || [],
     calcResults: row.data.calcResults || null,
   }));
-  const withProps = data && data.find(r => r.data.props && r.data.props.length > 0);
-  if (withProps) props = withProps.data.props;
+  // Props are stored in user_props table, not in project data
 }
 
 async function dbSaveProject(p) {

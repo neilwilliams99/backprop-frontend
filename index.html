@@ -1387,6 +1387,7 @@ supa.auth.onAuthStateChange(async (event, session) => {
   if (session && session.user) {
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';
+    await dbLoadProps();
     await dbLoadProjects();
     document.getElementById('projectListScreen').style.display = 'flex';
     renderProjectList();
@@ -1995,10 +1996,55 @@ function focusPropForm() {
   document.getElementById('propType').focus();
 }
 
+// ── Props DB helpers ──
+async function dbLoadProps() {
+  if (!currentUser) return;
+  const { data, error } = await supa.from('user_props').select('*').order('created_at');
+  if (error) { console.error('Props load error:', error); return; }
+  if (data && data.length > 0) {
+    props = data.map(row => ({
+      id:        row.id,
+      _supaId:   row.id,
+      type:      row.type,
+      extension: row.extension || '',
+      capacity:  row.capacity,
+      notes:     row.notes || '',
+      isDefault: false,
+    }));
+    if (props.length > 0) props[0].isDefault = true;
+  }
+}
+
+async function dbSaveProp(prop) {
+  if (!currentUser) return;
+  const payload = {
+    user_id:   currentUser.id,
+    type:      prop.type,
+    extension: prop.extension || '',
+    capacity:  prop.capacity,
+    notes:     prop.notes || '',
+  };
+  if (prop._supaId) {
+    const { error } = await supa.from('user_props').update(payload).eq('id', prop._supaId);
+    if (error) console.error('Prop save error:', error);
+  } else {
+    const { data, error } = await supa.from('user_props').insert(payload).select().single();
+    if (error) { console.error('Prop insert error:', error); return; }
+    prop._supaId = data.id;
+    prop.id      = data.id;
+  }
+}
+
+async function dbDeleteProp(prop) {
+  if (!currentUser || !prop._supaId) return;
+  const { error } = await supa.from('user_props').delete().eq('id', prop._supaId);
+  if (error) console.error('Prop delete error:', error);
+}
+
 function saveProp() {
-  const type = document.getElementById('propType').value.trim();
-  const ext = document.getElementById('propExtension').value.trim();
-  const cap = parseFloat(document.getElementById('propCapacity').value);
+  const type  = document.getElementById('propType').value.trim();
+  const ext   = document.getElementById('propExtension').value.trim();
+  const cap   = parseFloat(document.getElementById('propCapacity').value);
   const notes = document.getElementById('propNotes').value.trim();
   const editId = document.getElementById('propEditId').value;
 
@@ -2009,10 +2055,13 @@ function saveProp() {
     const idx = props.findIndex(p => p.id === editId);
     if (idx >= 0) {
       props[idx] = { ...props[idx], type, extension: ext, capacity: cap, notes };
+      dbSaveProp(props[idx]);
       showToast('Prop updated', 'success');
     }
   } else {
-    props.push({ id: 'p_' + uid(), type, extension: ext, capacity: cap, notes, isDefault: props.length === 0 });
+    const newProp = { id: 'p_' + uid(), _supaId: null, type, extension: ext, capacity: cap, notes, isDefault: props.length === 0 };
+    props.push(newProp);
+    dbSaveProp(newProp);
     showToast('Prop added to library', 'success');
   }
   clearPropForm();
@@ -2054,6 +2103,8 @@ function reconcilePropIds() {
 }
 
 function removeProp(i) {
+  const prop = props[i];
+  dbDeleteProp(prop);
   props.splice(i, 1);
   reconcilePropIds();
   renderProps();

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BackProp — IKB Engineering</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -983,8 +984,38 @@ header {
 </head>
 <body>
 
+<!-- ══ AUTH SCREEN ══ -->
+<div id="authScreen" style="display:flex;position:fixed;inset:0;background:#0a0e13;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+  <div style="width:360px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px">BACK<span style="color:#e8a020">PROP</span></div>
+      <div style="font-size:10px;font-family:'DM Mono',monospace;color:#7d8590;letter-spacing:1px;margin-top:4px">BY IKB ENGINEERING</div>
+    </div>
+    <div style="background:#111720;border:1px solid #2a3447;border-radius:12px;padding:28px">
+      <div style="display:flex;margin-bottom:24px;background:#0a0e13;border-radius:6px;padding:3px;border:1px solid #2a3447">
+        <button id="tabSignin" style="flex:1;padding:6px;border:none;border-radius:4px;background:#161e2a;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signin')">Sign In</button>
+        <button id="tabSignup" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:#7d8590;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signup')">Sign Up</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
+          <input id="authEmail" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
+          <input id="authPassword" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')handleAuth()">
+        </div>
+        <div id="authError" style="display:none;color:#f05050;font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px"></div>
+        <button id="authBtn" onclick="handleAuth()" style="margin-top:4px;padding:10px;background:#e8a020;color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Sign In</button>
+      </div>
+      <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
+    </div>
+  </div>
+</div>
+
+
 <!-- ══ PROJECT LIST SCREEN ══ -->
-<div id="projectListScreen">
+<div id="projectListScreen" style="display:none">
   <div class="proj-screen-header">
     <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
     <div class="proj-screen-sub">IKB Engineering — Back-Propping Design Tool</div>
@@ -1301,6 +1332,69 @@ header {
 </div><!-- /app -->
 
 <script>
+
+// ════════════════════════════════════════════════
+//  SUPABASE CONFIG + AUTH
+// ════════════════════════════════════════════════
+const SUPA_URL = 'https://kwbmiyjwmsuqllbqwudo.supabase.co';
+const SUPA_KEY = 'sb_publishable_J0mPoTMrkZEj-9Nq2x-VWw_SkhRxr28';
+const { createClient } = supabase;
+const supa = createClient(SUPA_URL, SUPA_KEY);
+let currentUser = null;
+let authMode = 'signin';
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tabSignin').style.background = mode === 'signin' ? '#161e2a' : 'transparent';
+  document.getElementById('tabSignin').style.color = mode === 'signin' ? '#dde8f5' : '#7d8590';
+  document.getElementById('tabSignup').style.background = mode === 'signup' ? '#161e2a' : 'transparent';
+  document.getElementById('tabSignup').style.color = mode === 'signup' ? '#dde8f5' : '#7d8590';
+  document.getElementById('authBtn').textContent = mode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('authMsg').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  const msgEl = document.getElementById('authMsg');
+  errEl.style.display = 'none';
+  msgEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
+  document.getElementById('authBtn').textContent = '…';
+  if (authMode === 'signup') {
+    const { error } = await supa.auth.signUp({ email, password });
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+    else { msgEl.textContent = 'Account created! Check your email to confirm, then sign in.'; msgEl.style.display = 'block'; }
+  } else {
+    const { error } = await supa.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+  }
+  document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+}
+
+async function signOut() {
+  await supa.auth.signOut();
+  currentUser = null;
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+}
+
+supa.auth.onAuthStateChange(async (event, session) => {
+  if (session && session.user) {
+    currentUser = session.user;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('projectListScreen').style.display = 'flex';
+    renderProjectList();
+  } else {
+    currentUser = null;
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('projectListScreen').style.display = 'none';
+  }
+});
+
 // ════════════════════════════════════════════════
 //  MULTI-PROJECT STATE
 // ════════════════════════════════════════════════

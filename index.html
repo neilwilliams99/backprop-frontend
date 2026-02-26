@@ -984,8 +984,14 @@ header {
 </head>
 <body>
 
+<!-- ══ LOADING SCREEN ══ -->
+<div id="loadingScreen" style="display:flex;position:fixed;inset:0;background:#0a0e13;z-index:10000;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px;color:#dde8f5">BACK<span style="color:#e8a020">PROP</span></div>
+  <div style="font-size:10px;font-family:'DM Mono',monospace;color:#7d8590;letter-spacing:2px">LOADING…</div>
+</div>
+
 <!-- ══ AUTH SCREEN ══ -->
-<div id="authScreen" style="display:flex;position:fixed;inset:0;background:#0a0e13;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
+<div id="authScreen" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
   <div style="width:360px">
     <div style="text-align:center;margin-bottom:32px">
       <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px">BACK<span style="color:#e8a020">PROP</span></div>
@@ -1389,6 +1395,7 @@ async function signOut() {
 }
 
 supa.auth.onAuthStateChange(async (event, session) => {
+  document.getElementById('loadingScreen').style.display = 'none';
   if (session && session.user) {
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';

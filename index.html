@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BackProp — IKB Engineering</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap');
 
@@ -1350,7 +1350,8 @@ header {
 const API_URL  = 'https://backprop-api.onrender.com';
 const SUPA_URL = 'https://kwbmiyjwmsuqllbqwudo.supabase.co';
 const SUPA_KEY = 'sb_publishable_J0mPoTMrkZEj-9Nq2x-VWw_SkhRxr28';
-const supa     = supabase.createClient(SUPA_URL, SUPA_KEY);
+const { createClient } = supabase;
+const supa     = createClient(SUPA_URL, SUPA_KEY);
 let currentUser = null;
 
 // ════════════════════════════════════════════════

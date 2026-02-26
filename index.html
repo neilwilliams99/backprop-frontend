@@ -1553,13 +1553,13 @@ async function dbSaveProject(p) {
   if (p._supaId) {
     const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);
     if (error) console.error('Save error:', error);
-    else showToast('Saved', 'success');
+    // silent save
   } else {
     const { data, error } = await supa.from('projects').insert(payload).select().single();
     if (error) { console.error('Insert error:', error); return; }
     p._supaId = data.id;
     p.id      = data.id;
-    showToast('Project saved', 'success');
+    // silent save
   }
 }
 
@@ -2394,7 +2394,7 @@ function runCalc() {
   calcResults = results;
   renderEngineerView();
   renderBuilderView();
-  showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''}`, 'success');
+  showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''} · saved`, 'success');
   updateSummary();
   updateCalcBtn();
   // Save results to database
@@ -2786,7 +2786,7 @@ function saveProjSettings() {
   calcResults = null;
   markDirty();
   closeProjModal();
-  showToast('Project settings saved', 'success');
+  // silent save
 }
 
 // ════════════════════════════════════════════════

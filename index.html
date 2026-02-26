@@ -2164,8 +2164,8 @@ function editProp(i) {
   document.getElementById('propType').focus();
 }
 
-// After prop library changes, fix up any zone levelsBelow entries whose propId
-// no longer exists in the library — reassign them to the current default.
+// After prop library changes, fix up zone levelsBelow entries.
+// If a snapshot exists the zone has everything it needs — never overwrite it.
 function reconcilePropIds() {
   const validIds = new Set(props.map(p => p.id));
   const defaultId = getDefaultPropId();
@@ -2173,12 +2173,20 @@ function reconcilePropIds() {
     lev.zones.forEach(zone => {
       zone.levelsBelow.forEach(bl => {
         if (bl.propId && !validIds.has(bl.propId)) {
-          bl.propId = defaultId;
-          bl.propCapOverride = null;
+          // Prop deleted from library — snapshot preserves calc data, just clear stale ID
+          if (bl.propSnapshot) {
+            bl.propId = null;
+          } else {
+            // No snapshot (legacy) — reassign to default
+            bl.propId = defaultId;
+            bl.propCapOverride = null;
+          }
         }
-        // Also assign default if propId is null and props now exist
-        if (!bl.propId && defaultId) {
+        // Only assign default if there is truly nothing — no ID and no snapshot
+        if (!bl.propId && !bl.propSnapshot && defaultId) {
           bl.propId = defaultId;
+          const libProp = props.find(p => p.id === defaultId);
+          if (libProp) bl.propSnapshot = { type: libProp.type, capacity: libProp.capacity };
         }
       });
     });

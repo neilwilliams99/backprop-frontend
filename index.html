@@ -1042,7 +1042,6 @@ header {
   <div class="nav-tabs">
     <button class="nav-tab" onclick="showProjectList()" id="tab-projects">← Projects</button>
     <button class="nav-tab active" onclick="showPage('levels')" id="tab-levels">🏗 Building Levels</button>
-    <button class="nav-tab" onclick="showPage('props')" id="tab-props">🔩 Prop Library</button>
     <button class="nav-tab" onclick="showPage('engineer')" id="tab-engineer">⚙ Engineer View</button>
     <button class="nav-tab" onclick="showPage('builder')" id="tab-builder">👷 Builder View</button>
   </div>
@@ -1112,6 +1111,36 @@ header {
         <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
       </div>
     </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Prop Library</div>
+    <div id="projModalPropTable" style="margin-bottom:8px"></div>
+    <div id="projModalPropForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
+      <div style="font-size:11px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:10px" id="modalPropFormTitle">Add Prop</div>
+      <input type="hidden" id="modalPropEditId">
+      <div class="proj-modal-grid">
+        <div class="field-group">
+          <label class="field-label">Type / Model</label>
+          <input class="field-input" id="modalPropType" placeholder="e.g. Acrow #2">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Extension</label>
+          <input class="field-input" id="modalPropExtension" placeholder="e.g. 2.0–3.4m">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacity (kN)</label>
+          <input class="field-input" type="number" id="modalPropCapacity" placeholder="e.g. 22" step="0.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes (optional)</label>
+          <input class="field-input" id="modalPropNotes" placeholder="Manufacturer, load case…">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-accent" style="flex:1" onclick="saveModalProp()">Save Prop</button>
+        <button class="btn btn-ghost" onclick="clearModalPropForm()">Cancel</button>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="showModalPropForm()">+ Add Prop</button>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
       <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
@@ -1203,71 +1232,6 @@ header {
       <div class="zones-page" id="zonesContent" style="padding:0">
         <div class="zones-grid" id="zonesGrid"></div>
         <button class="add-zone-btn" onclick="addZone()">+ Add Zone to this Level</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════
-       PAGE 2: PROP LIBRARY
-  ══════════════════════════════════════════════ -->
-  <div class="page" id="page-props">
-    <div class="page-header">
-      <div>
-        <div class="page-title">Prop Library</div>
-        <div class="page-subtitle">Build a library of props for selection in zone configurations. Set a default for quick assignment.</div>
-      </div>
-    </div>
-    <div class="page-content">
-      <div class="prop-library-wrap" style="padding:0">
-        <div class="prop-library-grid">
-
-          <!-- Prop Table -->
-          <div class="prop-table-wrap">
-            <div class="prop-table-head">
-              <div class="prop-col-head">Type / Model</div>
-              <div class="prop-col-head">Extension</div>
-              <div class="prop-col-head" style="text-align:center">Capacity</div>
-              <div class="prop-col-head" style="text-align:center">Default</div>
-              <div class="prop-col-head"></div>
-            </div>
-            <div id="propTableBody"></div>
-            <div class="add-prop-row" onclick="focusPropForm()">
-              <span style="font-size:16px;line-height:1">+</span> Add prop to library
-            </div>
-          </div>
-
-          <!-- Add Prop Form -->
-          <div class="prop-form">
-            <div class="panel-header">
-              <span id="propFormTitle">Add Prop</span>
-            </div>
-            <div class="panel-body" style="padding:16px">
-              <input type="hidden" id="propEditId" value="">
-              <div class="field-group">
-                <label class="field-label">Prop Type / Model</label>
-                <input class="field-input" id="propType" placeholder="e.g. Acrow #2, Hünnebeck P50">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Extension / Configuration</label>
-                <input class="field-input" id="propExtension" placeholder="e.g. 3.2m, Extended to 4.5m">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Capacity (kN)</label>
-                <input class="field-input" type="number" id="propCapacity" placeholder="e.g. 22" step="0.5">
-              </div>
-              <div class="field-group">
-                <label class="field-label">Notes (optional)</label>
-                <input class="field-input" id="propNotes" placeholder="Manufacturer, load case, etc.">
-              </div>
-              <div class="divider"></div>
-              <div style="display:flex;gap:8px">
-                <button class="btn btn-accent" style="flex:1" onclick="saveProp()">Save Prop</button>
-                <button class="btn btn-ghost" onclick="clearPropForm()">Clear</button>
-              </div>
-            </div>
-          </div>
-
-        </div>
       </div>
     </div>
   </div>
@@ -1426,8 +1390,7 @@ async function initAuth() {
     document.getElementById('loadingScreen').style.display = 'none';
     if (session && session.user) {
       currentUser = session.user;
-      await dbLoadProps();
-      await dbLoadProjects();
+        await dbLoadProjects();
       document.getElementById('projectListScreen').style.display = 'flex';
       renderProjectList();
     } else {
@@ -1452,7 +1415,6 @@ supa.auth.onAuthStateChange(async (event, session) => {
     currentUser = session.user;
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('loadingScreen').style.display = 'none';
-    await dbLoadProps();
     await dbLoadProjects();
     document.getElementById('projectListScreen').style.display = 'flex';
     document.getElementById('appShell').style.display = 'none';
@@ -1478,7 +1440,7 @@ function makeNewProjectData(name, jobNo) {
   const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
   return {
     id,
-    project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0 },
+    project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0, props: [] },
     // Always seed with base level at index 0 — infinite capacity, not deletable
     levels: [
       { id: 'base_' + id, name: 'Ground', thickness: 0, slabCap: 100000, addLoad: 0, zones: [], isBase: true }
@@ -1504,7 +1466,7 @@ function renderProjectList() {
       <div class="proj-card-stats">
         <div class="proj-card-stat"><span class="proj-card-stat-val">${p.levels.length}</span>Levels</div>
         <div class="proj-card-stat"><span class="proj-card-stat-val">${totalZones}</span>Zones</div>
-        <div class="proj-card-stat"><span class="proj-card-stat-val">${props.length}</span>Props</div>
+        <div class="proj-card-stat"><span class="proj-card-stat-val">${(p.project.props||[]).length}</span>Props</div>
         <div class="proj-card-stat"><span class="proj-card-stat-val" style="color:${statusColor};font-size:11px">${statusTxt}</span>Status</div>
       </div>`;
     card.onclick = () => openProject(p.id);
@@ -1534,11 +1496,11 @@ async function dbLoadProjects() {
   projectStore = (data || []).map(row => ({
     id:          row.id,
     _supaId:     row.id,
-    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', concDensity: 24, maxSpacing: 3.0, ...(row.data.project || {}) },
+    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', concDensity: 24, maxSpacing: 3.0, props: [], ...(row.data.project || {}) },
     levels:      row.data.levels      || [],
     calcResults: row.data.calcResults || null,
   }));
-  // Props are stored in user_props table, not in project data
+
 }
 
 async function dbSaveProject(p) {
@@ -1633,7 +1595,8 @@ let project = {
 // Global working state — loaded from projectStore when a project is opened
 let levels = [];
 // props is USER-LEVEL — shared across all projects, not stored per-project
-let props = []; // populated from user_props table on login
+// props is now per-project — always access via current project.props
+function getProps() { return (project && project.props) ? project.props : []; }
 let calcResults = null;
 let currentZoneLevelId = null;
 let selectedBuilderPour = 0;
@@ -1703,7 +1666,6 @@ function showPage(page) {
   if (tab) tab.classList.add('active');
 
   if (page === 'levels') renderLevels();
-  if (page === 'props') renderProps();
   if (page === 'engineer') renderEngineerView();
   if (page === 'builder') renderBuilderView();
   updateSummary();
@@ -1824,8 +1786,9 @@ function refreshZoneLevelsBelow(zone, lev) {
 }
 
 function getDefaultPropId() {
-  const def = props.find(p => p.isDefault);
-  return def ? def.id : (props.length > 0 ? props[0].id : null);
+  const p_list = getProps();
+  const def = p_list.find(p => p.isDefault);
+  return def ? def.id : (p_list.length > 0 ? p_list[0].id : null);
 }
 
 function renderZones(lev) {
@@ -1846,8 +1809,8 @@ function renderZones(lev) {
       const disabledAttr = bl.active ? '' : 'disabled';
 
       // Prop selector options
-      let propOpts = props.length === 0 ? `<option value="">— add props to library —</option>` : "";
-      props.forEach(p => {
+      let propOpts = getProps().length === 0 ? `<option value="">— add props to library —</option>` : "";
+      getProps().forEach(p => {
         propOpts += `<option value="${p.id}" ${bl.propId === p.id ? 'selected' : ''}>${p.type} (${p.capacity}kN)</option>`;
       });
 
@@ -2013,7 +1976,7 @@ function setZoneProp(levId, zi, bli, propId) {
   bl.propId = propId || null;
   bl.propCapOverride = null;
   // Snapshot the prop data at assignment time — protects against library edits/deletes
-  const libProp = props.find(p => p.id === propId);
+  const libProp = getProps().find(p => p.id === propId);
   bl.propSnapshot = libProp ? { type: libProp.type, capacity: libProp.capacity } : null;
   markDirty();
 }
@@ -2022,152 +1985,104 @@ function getPropCap(propId, snapshot) {
   // Always prefer the snapshot — protects against library edits/deletes
   if (snapshot && snapshot.capacity != null) return snapshot.capacity;
   if (!propId) return null;
-  const p = props.find(pr => pr.id === propId);
+  const p = getProps().find(pr => pr.id === propId);
   return p ? p.capacity : null;
 }
 
 // Refresh snapshots in active project when a prop is edited in the library
-function refreshPropSnapshots() {
-  levels.forEach(lev => {
-    lev.zones.forEach(zone => {
-      zone.levelsBelow.forEach(bl => {
-        if (!bl.propId) return;
-        const libProp = props.find(p => p.id === bl.propId);
-        if (libProp) bl.propSnapshot = { type: libProp.type, capacity: libProp.capacity };
-      });
-    });
-  });
-}
 
 // ════════════════════════════════════════════════
 //  PROP LIBRARY
 // ════════════════════════════════════════════════
-function renderProps() {
-  const body = document.getElementById('propTableBody');
-  if (props.length === 0) {
-    body.innerHTML = `<div class="prop-empty"><div class="prop-empty-icon">🔩</div>No props in library yet. Add one using the form →</div>`;
-    return;
-  }
-  body.innerHTML = '';
-  props.forEach((p, i) => {
-    const row = document.createElement('div');
-    row.className = 'prop-row';
-    row.innerHTML = `
-      <div>
-        <div class="prop-row-name">${esc(p.type)}</div>
-        ${p.notes ? `<div style="font-size:10px;color:var(--text-muted)">${esc(p.notes)}</div>` : ''}
-      </div>
-      <div style="font-size:11px;color:var(--text-muted)">${esc(p.extension)}</div>
-      <div style="text-align:center"><span class="prop-cap-badge">${p.capacity} kN</span></div>
-      <div style="text-align:center">
-        <span class="prop-default-star" title="${p.isDefault ? 'Default prop (click to unset)' : 'Click to set as default'}"
-          onclick="togglePropDefault(${i})">
-          ${p.isDefault ? '★' : '☆'}
-        </span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:4px">
-        <button class="del-btn" style="font-size:12px" title="Edit" onclick="editProp(${i})">✎</button>
-        <button class="del-btn" onclick="removeProp(${i})">×</button>
-      </div>
-    `;
-    body.appendChild(row);
-  });
-  updateSummary();
-}
+// function renderProps() removed - props now in project settings modal
 
-function focusPropForm() {
-  document.getElementById('propType').focus();
-}
+// function focusPropForm() removed - props now in project settings modal
 
-// ── Props DB helpers ──
-async function dbLoadProps() {
-  if (!currentUser) return;
-  const { data, error } = await supa.from('user_props').select('*').order('created_at');
-  if (error) { console.error('Props load error:', error); return; }
-  if (data && data.length > 0) {
-    props = data.map(row => ({
-      id:        row.id,
-      _supaId:   row.id,
-      type:      row.type,
-      extension: row.extension || '',
-      capacity:  row.capacity,
-      notes:     row.notes || '',
-      isDefault: false,
-    }));
-    if (props.length > 0) props[0].isDefault = true;
-  }
-}
+function saveProp() { saveModalProp(); } // delegates to modal version
 
-async function dbSaveProp(prop) {
-  if (!currentUser) return;
-  const payload = {
-    user_id:   currentUser.id,
-    type:      prop.type,
-    extension: prop.extension || '',
-    capacity:  prop.capacity,
-    notes:     prop.notes || '',
-  };
-  if (prop._supaId) {
-    const { error } = await supa.from('user_props').update(payload).eq('id', prop._supaId);
-    if (error) console.error('Prop save error:', error);
-  } else {
-    const { data, error } = await supa.from('user_props').insert(payload).select().single();
-    if (error) { console.error('Prop insert error:', error); return; }
-    prop._supaId = data.id;
-    prop.id      = data.id;
-  }
-}
-
-async function dbDeleteProp(prop) {
-  if (!currentUser || !prop._supaId) return;
-  const { error } = await supa.from('user_props').delete().eq('id', prop._supaId);
-  if (error) console.error('Prop delete error:', error);
-}
-
-function saveProp() {
-  const type  = document.getElementById('propType').value.trim();
-  const ext   = document.getElementById('propExtension').value.trim();
-  const cap   = parseFloat(document.getElementById('propCapacity').value);
-  const notes = document.getElementById('propNotes').value.trim();
-  const editId = document.getElementById('propEditId').value;
+function saveModalProp() {
+  const type  = document.getElementById('modalPropType').value.trim();
+  const ext   = document.getElementById('modalPropExtension').value.trim();
+  const cap   = parseFloat(document.getElementById('modalPropCapacity').value);
+  const notes = document.getElementById('modalPropNotes').value.trim();
+  const editId = document.getElementById('modalPropEditId').value;
 
   if (!type) { showToast('Enter a prop type', 'error'); return; }
   if (isNaN(cap) || cap <= 0) { showToast('Enter a valid capacity', 'error'); return; }
 
   if (editId) {
-    const idx = props.findIndex(p => p.id === editId);
+    const idx = getProps().findIndex(p => p.id === editId);
     if (idx >= 0) {
-      props[idx] = { ...props[idx], type, extension: ext, capacity: cap, notes };
-      dbSaveProp(props[idx]);
+      getProps()[idx] = { ...getProps()[idx], type, extension: ext, capacity: cap, notes };
       showToast('Prop updated', 'success');
     }
   } else {
-    const newProp = { id: 'p_' + uid(), _supaId: null, type, extension: ext, capacity: cap, notes, isDefault: props.length === 0 };
-    props.push(newProp);
-    dbSaveProp(newProp);
-    showToast('Prop added to library', 'success');
+    const newProp = { id: 'p_' + uid(), type, extension: ext, capacity: cap, notes, isDefault: getProps().length === 0 };
+    getProps().push(newProp);
+    showToast('Prop added', 'success');
   }
-  clearPropForm();
-  renderProps();
+  clearModalPropForm();
+  renderModalPropTable();
   reconcilePropIds();
-  refreshPropSnapshots();
+  markDirty();
 }
 
-function editProp(i) {
-  const p = props[i];
-  document.getElementById('propEditId').value = p.id;
-  document.getElementById('propType').value = p.type;
-  document.getElementById('propExtension').value = p.extension;
-  document.getElementById('propCapacity').value = p.capacity;
-  document.getElementById('propNotes').value = p.notes;
-  document.getElementById('propFormTitle').textContent = 'Edit Prop';
-  document.getElementById('propType').focus();
+function showModalPropForm(editIdx) {
+  const form = document.getElementById('projModalPropForm');
+  form.style.display = 'block';
+  clearModalPropForm();
+  document.getElementById('projModalPropForm').style.display = 'block';
+  if (editIdx !== undefined) {
+    const p = getProps()[editIdx];
+    document.getElementById('modalPropEditId').value = p.id;
+    document.getElementById('modalPropType').value = p.type;
+    document.getElementById('modalPropExtension').value = p.extension || '';
+    document.getElementById('modalPropCapacity').value = p.capacity;
+    document.getElementById('modalPropNotes').value = p.notes || '';
+    document.getElementById('modalPropFormTitle').textContent = 'Edit Prop';
+  }
+  document.getElementById('modalPropType').focus();
 }
 
-// After prop library changes, fix up zone levelsBelow entries.
-// If a snapshot exists the zone has everything it needs — never overwrite it.
+function clearModalPropForm() {
+  document.getElementById('modalPropEditId').value = '';
+  document.getElementById('modalPropType').value = '';
+  document.getElementById('modalPropExtension').value = '';
+  document.getElementById('modalPropCapacity').value = '';
+  document.getElementById('modalPropNotes').value = '';
+  document.getElementById('modalPropFormTitle').textContent = 'Add Prop';
+  document.getElementById('projModalPropForm').style.display = 'none';
+}
+
+function renderModalPropTable() {
+  const container = document.getElementById('projModalPropTable');
+  if (!container) return;
+  const propList = getProps();
+  if (propList.length === 0) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);font-family:\'DM Mono\',monospace;padding:4px 0 8px">No props yet — add one below.</div>';
+    return;
+  }
+  let html = '<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:8px">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr 70px 50px 40px;background:var(--surface3);padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;color:var(--text-muted);font-family:\'Syne\',sans-serif">';
+  html += '<div>TYPE</div><div>EXTENSION</div><div style="text-align:center">kN</div><div></div><div></div></div>';
+  propList.forEach((p, i) => {
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr 70px 50px 40px;padding:7px 10px;font-size:11px;font-family:'DM Mono',monospace;border-top:1px solid var(--border);align-items:center">`;
+    html += `<div style="font-weight:500">${esc(p.type)}</div>`;
+    html += `<div style="color:var(--text-muted)">${esc(p.extension||'—')}</div>`;
+    html += `<div style="text-align:center">${p.capacity}</div>`;
+    html += `<div style="text-align:center"><button onclick="showModalPropForm(${i})" style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:11px;font-family:'DM Mono',monospace;padding:0">Edit</button></div>`;
+    html += `<div style="text-align:center"><button onclick="removeProp(${i})" style="background:none;border:none;color:var(--np);cursor:pointer;font-size:16px;line-height:1;padding:0">×</button></div>`;
+    html += '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+
+// function editProp(i) removed - props now in project settings modal
+
 function reconcilePropIds() {
-  const validIds = new Set(props.map(p => p.id));
+  const validIds = new Set(getProps().map(p => p.id));
   const defaultId = getDefaultPropId();
   levels.forEach(lev => {
     lev.zones.forEach(zone => {
@@ -2185,7 +2100,7 @@ function reconcilePropIds() {
         // Only assign default if there is truly nothing — no ID and no snapshot
         if (!bl.propId && !bl.propSnapshot && defaultId) {
           bl.propId = defaultId;
-          const libProp = props.find(p => p.id === defaultId);
+          const libProp = getProps().find(p => p.id === defaultId);
           if (libProp) bl.propSnapshot = { type: libProp.type, capacity: libProp.capacity };
         }
       });
@@ -2195,25 +2110,16 @@ function reconcilePropIds() {
 }
 
 function removeProp(i) {
-  const prop = props[i];
-  dbDeleteProp(prop);
-  props.splice(i, 1);
+  getProps().splice(i, 1);
   reconcilePropIds();
-  renderProps();
+  renderModalPropTable();
   showToast('Prop removed', 'info');
 }
 
-function clearPropForm() {
-  document.getElementById('propEditId').value = '';
-  document.getElementById('propType').value = '';
-  document.getElementById('propExtension').value = '';
-  document.getElementById('propCapacity').value = '';
-  document.getElementById('propNotes').value = '';
-  document.getElementById('propFormTitle').textContent = 'Add Prop';
-}
+// function clearPropForm() removed - props now in project settings modal
 
 function togglePropDefault(i) {
-  props.forEach((p, j) => p.isDefault = (j === i && !p.isDefault));
+  getProps().forEach((p, j) => p.isDefault = (j === i && !p.isDefault));
   renderProps();
 }
 
@@ -2226,10 +2132,10 @@ function runCalc() {
   const results = [];
 
   // ── PRE-FLIGHT VALIDATION ────────────────────────────────────────────────
-  const validPropIds = new Set(props.map(p => p.id));
+  const validPropIds = new Set(getProps().map(p => p.id));
 
   // Check 1: prop library must not be empty
-  if (props.length === 0) {
+  if (getProps().length === 0) {
     showToast('Cannot calculate — prop library is empty. Add at least one prop before running.', 'error');
     return;
   }
@@ -2730,7 +2636,7 @@ function renderBuilderVis(pour) {
     } else if (entry) {
       const sp = entry.propSpacing;
       // Get prop name for this entry
-      const propObj = entry.propId ? props.find(p => p.id === entry.propId) : null;
+      const propObj = entry.propId ? getProps().find(p => p.id === entry.propId) : null;
       const propName = propObj ? propObj.type : '—';
       const spText = sp ? `${sp.toFixed(2)}m` : '—';
       const detailSuffix = (propName !== '—' || sp) ? ` — ${propName} @ ${spText}` : '';
@@ -2788,6 +2694,8 @@ function renderBuilderVis(pour) {
 //  PROJECT SETTINGS
 // ════════════════════════════════════════════════
 function openProjModal() {
+  renderModalPropTable();
+  clearModalPropForm();
   document.getElementById('projName').value = project.name;
   document.getElementById('jobNo').value = project.jobNo;
   document.getElementById('prepBy').value = project.prepBy;
@@ -2824,7 +2732,7 @@ function updateSummary() {
   const totalZones = levels.reduce((a,l) => a + l.zones.length, 0);
   document.getElementById('sumLevels').textContent = levels.length;
   document.getElementById('sumZones').textContent = totalZones;
-  document.getElementById('sumProps').textContent = props.length;
+  document.getElementById('sumProps').textContent = getProps().length;
   if (!calcResults) {
     document.getElementById('sumStatus').innerHTML = `<span class="chip chip-warn">Not calculated</span>`;
   } else {
@@ -2977,7 +2885,7 @@ function exportResults() {
 
   // Prop library
   const propData = [['Type', 'Extension', 'Capacity kN', 'Notes', 'Default']];
-  props.forEach(p => propData.push([p.type, p.extension, p.capacity, p.notes, p.isDefault?'YES':'NO']));
+  getProps().forEach(p => propData.push([p.type, p.extension, p.capacity, p.notes, p.isDefault?'YES':'NO']));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(propData), 'PROP LIBRARY');
 
   XLSX.writeFile(wb, `${project.jobNo}_backpropping.xlsx`);

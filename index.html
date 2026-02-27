@@ -1613,25 +1613,49 @@ function isBaseLevelById(levelId) {
   return lev ? isBaseLevel(lev) : false;
 }
 
+function makeBlEntry(levelId, active, slabCap, addLoad) {
+  const propId = getDefaultPropId();
+  const libProp = propId ? getProps().find(p => p.id === propId) : null;
+  return {
+    levelId,
+    active,
+    slabCap,
+    addLoad,
+    propId,
+    propSnapshot: libProp ? { type: libProp.type, capacity: libProp.capacity } : null,
+    propCapOverride: null,
+  };
+}
+
+
+function nextZoneName(lev) {
+  // Find the highest Zone N number used, suggest next
+  let max = 0;
+  lev.zones.forEach(z => {
+    const m = z.name.match(/^Zone (\d+)$/i);
+    if (m) max = Math.max(max, parseInt(m[1]));
+  });
+  return `Zone ${max + 1}`;
+}
+
+
 function makeDefaultZone(lev, levelIdx) {
   // Build levelsBelow array: levels below this one in reverse (nearest first)
   const below = [];
   for (let j = levelIdx - 1; j >= 0; j--) {
     const depthBelow = levelIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
-    below.push({
-      levelId: levels[j].id,
-      active: (levelIdx - j) <= 3,
-      slabCap: levels[j].slabCap,
-      addLoad: depthBelow === 0 ? 0.3 : 0.1,
-      propId: getDefaultPropId(),
-      propCapOverride: null,
-    });
+    below.push(makeBlEntry(
+      levels[j].id,
+      (levelIdx - j) <= 3,
+      levels[j].slabCap,
+      depthBelow === 0 ? 0.3 : 0.1
+    ));
   }
   return {
     id: 'z_' + lev.id + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
-    name: 'Zone 1',
+    name: nextZoneName(lev),
     thickness: lev.thickness,
-    addLoad: 3.0,   // additional construction load on the wet slab level (kPa)
+    addLoad: 3.0,
     levelsBelow: below,
   };
 }
@@ -1772,14 +1796,12 @@ function refreshZoneLevelsBelow(zone, lev) {
     const blev = levels[j];
     if (!zone.levelsBelow.find(b => b.levelId === blev.id)) {
       const depthBelow = levIdx - 1 - j;
-      zone.levelsBelow.push({
-        levelId: blev.id,
-        active: (levIdx - j) <= 3,
-        slabCap: blev.slabCap,
-        addLoad: depthBelow === 0 ? 0.3 : 0.1,
-        propId: getDefaultPropId(),
-        propCapOverride: null,
-      });
+      zone.levelsBelow.push(makeBlEntry(
+        blev.id,
+        (levIdx - j) <= 3,
+        blev.slabCap,
+        depthBelow === 0 ? 0.3 : 0.1
+      ));
     }
   }
   // Remove deleted levels
@@ -1845,8 +1867,9 @@ function renderZones(lev) {
         <div class="zone-card-title">
           <span>${esc(lev.name)}</span>
           <span style="color:var(--text-muted)">·</span>
-          <input style="background:transparent;border:none;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:12px;width:80px;outline:none"
+          <input style="background:transparent;border:none;border-bottom:1px dashed var(--border);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:12px;width:140px;outline:none;padding-bottom:1px"
             value="${esc(zone.name)}"
+            title="Click to rename zone"
             onchange="setZoneName('${lev.id}',${zi},this.value)">
           <span class="zone-thickness-badge" id="zoneBadge_${lev.id}_${zi}">${zone.thickness} mm</span>
         </div>
@@ -1893,29 +1916,26 @@ function renderZones(lev) {
   }
 }
 
+
 function addZone() {
   const lev = levels.find(l => l.id === currentZoneLevelId);
   if (!lev) return;
   const levIdx = levels.indexOf(lev);
-  const zoneNum = lev.zones.length + 1;
   const newZone = {
     id: 'z_' + uid(),
-    name: `Zone ${zoneNum}`,
+    name: nextZoneName(lev),
     thickness: lev.thickness,
-    addLoad: 3.0,   // additional construction load on the wet slab (kPa)
+    addLoad: 3.0,
     levelsBelow: [],
   };
-  // Build levelsBelow — first level below gets 0.3 kPa, subsequent 0.1 kPa
   for (let j = levIdx - 1; j >= 0; j--) {
-    const depthBelow = levIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
-    newZone.levelsBelow.push({
-      levelId: levels[j].id,
-      active: (levIdx - j) <= 3,
-      slabCap: levels[j].slabCap,
-      addLoad: depthBelow === 0 ? 0.3 : 0.1,
-      propId: getDefaultPropId(),
-      propCapOverride: null,
-    });
+    const depthBelow = levIdx - 1 - j;
+    newZone.levelsBelow.push(makeBlEntry(
+      levels[j].id,
+      (levIdx - j) <= 3,
+      levels[j].slabCap,
+      depthBelow === 0 ? 0.3 : 0.1
+    ));
   }
   lev.zones.push(newZone);
   renderZones(lev);

@@ -1049,6 +1049,30 @@ header {
 </div>
 
 
+
+<!-- ══ PAYWALL SCREEN ══ -->
+<div id="paywallScreen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:600;align-items:center;justify-content:center;flex-direction:column">
+  <div style="width:420px;max-width:95vw;text-align:center">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px;margin-bottom:6px">
+      BACK<span style="color:var(--accent)">PROP</span>
+    </div>
+    <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--text-muted);letter-spacing:1px;margin-bottom:40px">BY IKB ENGINEERING</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px">
+      <div id="paywallIcon" style="font-size:36px;margin-bottom:16px">🔒</div>
+      <div id="paywallTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:8px">Subscription Required</div>
+      <div id="paywallMsg" style="font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:28px;line-height:1.6"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:24px">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;color:var(--accent)">A$30<span style="font-size:13px;color:var(--text-muted);font-family:'DM Mono',monospace">/month</span></div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:4px">Cancel anytime · Secure payment via Stripe</div>
+      </div>
+      <button id="paywallBtn" onclick="startCheckout()" class="btn btn-accent" style="width:100%;padding:12px;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">
+        Subscribe Now
+      </button>
+      <button onclick="signOut()" class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:11px">Sign out</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PROJECT LIST SCREEN ══ -->
 <div id="projectListScreen" style="display:none">
   <!-- Dashboard Header -->
@@ -1431,6 +1455,14 @@ let _authInitializing = true;
 
 // Check session immediately on load — prevents flash of login screen
 async function initAuth() {
+  // Handle Stripe redirect back
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    window.history.replaceState({}, '', '/');
+    setTimeout(() => showToast('Payment successful — welcome to BackProp!', 'success', 8000), 1500);
+  } else if (params.get('payment') === 'cancelled') {
+    window.history.replaceState({}, '', '/');
+  }
   try {
     const { data } = await supa.auth.getSession();
     const session = data.session;
@@ -1439,9 +1471,7 @@ async function initAuth() {
     if (session && session.user) {
       currentUser = session.user;
         await dbLoadProjects();
-      document.getElementById('projectListScreen').style.display = 'flex';
-      updateDashWelcome();
-      renderProjectList();
+      await showDashboardWithAccessCheck(currentUser);
     } else {
       document.getElementById('authScreen').style.display = 'flex';
     }
@@ -1473,6 +1503,7 @@ supa.auth.onAuthStateChange(async (event, session) => {
     projectStore = [];
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('projectListScreen').style.display = 'none';
+    document.getElementById('paywallScreen').style.display = 'none';
     document.getElementById('appShell').style.display = 'none';
   }
 });
@@ -3077,6 +3108,103 @@ async function dlgConfirm(title, sub='', confirmText='Delete', danger=true) {
 
 async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', input2Label='', input2Placeholder='', input2Default='', confirmText='Create') {
   return _openDialog({ title, sub, input: true, inputPlaceholder, inputDefault, input2Label, input2Placeholder, input2Default, confirmText });
+}
+
+
+
+// ════════════════════════════════════════════════
+//  SUBSCRIPTION & PAYWALL
+// ════════════════════════════════════════════════
+const API_URL = 'https://backprop-api.onrender.com';
+const TRIAL_DAYS = 7;
+
+function getTrialDaysLeft(user) {
+  const created = new Date(user.created_at);
+  const now = new Date();
+  const daysUsed = (now - created) / (1000 * 60 * 60 * 24);
+  return Math.max(0, TRIAL_DAYS - daysUsed);
+}
+
+async function checkAccess(user) {
+  // First check trial period
+  const trialDaysLeft = getTrialDaysLeft(user);
+
+  // Then check subscription status from API
+  try {
+    const res = await fetch(`${API_URL}/subscription-status?user_id=${user.id}`);
+    const data = await res.json();
+    if (data.access) return { access: true, reason: 'subscribed' };
+  } catch(e) {
+    console.warn('Subscription check failed, falling back to trial', e);
+    // If API is down, fall back to trial grace — don't lock users out
+    if (trialDaysLeft > 0) return { access: true, reason: 'trial', daysLeft: Math.ceil(trialDaysLeft) };
+  }
+
+  if (trialDaysLeft > 0) {
+    return { access: true, reason: 'trial', daysLeft: Math.ceil(trialDaysLeft) };
+  }
+  return { access: false, reason: 'expired' };
+}
+
+function showPaywall(reason) {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+  const screen = document.getElementById('paywallScreen');
+  screen.style.display = 'flex';
+
+  if (reason === 'expired') {
+    document.getElementById('paywallIcon').textContent = '⏰';
+    document.getElementById('paywallTitle').textContent = 'Free Trial Ended';
+    document.getElementById('paywallMsg').textContent =
+      'Your 7-day free trial has ended. Subscribe to continue using BackProp.';
+  } else {
+    document.getElementById('paywallTitle').textContent = 'Subscription Required';
+    document.getElementById('paywallMsg').textContent =
+      'A subscription is required to access BackProp.';
+  }
+}
+
+async function startCheckout() {
+  const btn = document.getElementById('paywallBtn');
+  btn.textContent = 'Redirecting to Stripe…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_URL}/create-checkout-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id, email: currentUser.email }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error('No checkout URL returned');
+    }
+  } catch(e) {
+    showToast('Could not start checkout — please try again', 'error');
+    btn.textContent = 'Subscribe Now';
+    btn.disabled = false;
+  }
+}
+
+async function showDashboardWithAccessCheck(user) {
+  const access = await checkAccess(user);
+  if (!access.access) {
+    showPaywall(access.reason);
+    return;
+  }
+  // Show trial banner if applicable
+  if (access.reason === 'trial' && access.daysLeft <= 3) {
+    setTimeout(() => showToast(
+      `Trial: ${access.daysLeft} day${access.daysLeft !== 1 ? 's' : ''} remaining — subscribe to keep access`,
+      'info', 8000
+    ), 1000);
+  }
+  document.getElementById('paywallScreen').style.display = 'none';
+  document.getElementById('projectListScreen').style.display = 'flex';
+  updateDashWelcome();
+  renderProjectList();
 }
 
 

@@ -3019,20 +3019,7 @@ function _closeDialog(result) {
   if (_dialogResolve) { _dialogResolve(result); _dialogResolve = null; }
 }
 
-document.getElementById('dialogCancel').onclick  = () => _closeDialog(null);
-document.getElementById('dialogConfirm').onclick = () => {
-  const inp  = document.getElementById('dialogInput').value;
-  const inp2 = document.getElementById('dialogInput2').value;
-  const inputVisible = document.getElementById('dialogInputWrap').style.display !== 'none';
-  _closeDialog(inputVisible ? { v1: inp, v2: inp2 } : true);
-};
-document.getElementById('dialogInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('dialogConfirm').click();
-  if (e.key === 'Escape') _closeDialog(null);
-});
-document.getElementById('customDialog').addEventListener('click', e => {
-  if (e.target === document.getElementById('customDialog')) _closeDialog(null);
-});
+// Dialog listeners attached via onclick attributes in HTML
 
 async function dlgConfirm(title, sub='', confirmText='Delete', danger=true) {
   return _openDialog({ title, sub, confirmText, dangerConfirm: danger });
@@ -3050,20 +3037,22 @@ async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', in
 </script>
 
 <!-- ══ CUSTOM DIALOG (replaces alert/confirm/prompt) ══ -->
-<div class="modal-overlay" id="customDialog">
+<div class="modal-overlay" id="customDialog" onclick="if(event.target===this)_closeDialog(null)">
   <div class="modal" style="width:400px">
     <div class="modal-title" id="dialogTitle"></div>
     <div class="modal-sub" id="dialogSub" style="margin-bottom:14px"></div>
     <div id="dialogInputWrap" style="display:none;margin-bottom:4px">
-      <input class="field-input" id="dialogInput" style="width:100%;box-sizing:border-box">
+      <input class="field-input" id="dialogInput" style="width:100%;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
     </div>
     <div id="dialogInput2Wrap" style="display:none;margin-top:8px">
       <label class="field-label" id="dialogInput2Label"></label>
-      <input class="field-input" id="dialogInput2" style="width:100%;box-sizing:border-box">
+      <input class="field-input" id="dialogInput2" style="width:100%;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
     </div>
     <div class="modal-actions" style="margin-top:16px">
-      <button class="btn btn-ghost" id="dialogCancel">Cancel</button>
-      <button class="btn btn-accent" id="dialogConfirm">Confirm</button>
+      <button class="btn btn-ghost" id="dialogCancel" onclick="_closeDialog(null)">Cancel</button>
+      <button class="btn btn-accent" id="dialogConfirm" onclick="(function(){const inp=document.getElementById('dialogInput').value;const inp2=document.getElementById('dialogInput2').value;const vis=document.getElementById('dialogInputWrap').style.display!=='none';_closeDialog(vis?{v1:inp,v2:inp2}:true)})()">Confirm</button>
     </div>
   </div>
 </div>

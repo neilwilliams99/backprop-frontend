@@ -1107,7 +1107,7 @@ header {
   </div>
 
   <div class="nav-tabs">
-    <button class="nav-tab" onclick="showProjectList()" id="tab-projects">← Projects</button>
+    <button class="nav-tab" onclick="showProjectList()" id="tab-projects">← Dashboard</button>
     <button class="nav-tab active" onclick="showPage('levels')" id="tab-levels">🏗 Building Levels</button>
     <button class="nav-tab" onclick="showPage('engineer')" id="tab-engineer">⚙ Engineer View</button>
     <button class="nav-tab" onclick="showPage('builder')" id="tab-builder">👷 Builder View</button>
@@ -3228,12 +3228,60 @@ async function showDashboardWithAccessCheck(user) {
 // ════════════════════════════════════════════════
 //  USER SETTINGS
 // ════════════════════════════════════════════════
-function openUserSettings() {
+async function openUserSettings() {
   const meta = currentUser?.user_metadata || {};
   document.getElementById('settingsFirstName').value = meta.first_name || '';
   document.getElementById('settingsLastName').value  = meta.last_name  || '';
   document.getElementById('settingsEmail').value     = currentUser?.email || '';
+
+  // Load subscription status
+  const statusEl = document.getElementById('settingsSubStatus');
+  statusEl.textContent = 'Checking…';
+  try {
+    const res  = await fetch(`${API_URL}/subscription-status?user_id=${currentUser.id}`);
+    const data = await res.json();
+    if (data.access && data.reason === 'subscribed') {
+      statusEl.textContent = '✓ Active subscription';
+      statusEl.style.color = 'var(--tg)';
+    } else if (data.reason === 'trial') {
+      const days = Math.ceil(getTrialDaysLeft(currentUser));
+      statusEl.textContent = `Free trial — ${days} day${days !== 1 ? 's' : ''} remaining`;
+      statusEl.style.color = 'var(--accent)';
+    } else {
+      statusEl.textContent = 'No active subscription';
+      statusEl.style.color = 'var(--np)';
+    }
+  } catch(e) {
+    statusEl.textContent = 'Could not load status';
+    statusEl.style.color = 'var(--text-muted)';
+  }
+
   document.getElementById('userSettingsModal').classList.add('open');
+}
+
+async function manageSubscription() {
+  // Redirect to Stripe customer portal
+  const btn = event.target;
+  btn.textContent = 'Opening Stripe…';
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`${API_URL}/create-portal-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: currentUser.id }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      throw new Error('No portal URL');
+    }
+  } catch(e) {
+    showToast('Could not open Stripe portal — please try again', 'error');
+  } finally {
+    btn.textContent = 'Manage Subscription via Stripe';
+    btn.disabled = false;
+  }
 }
 
 async function saveUserSettings() {
@@ -3303,6 +3351,11 @@ function updateDashWelcome() {
       <label class="field-label">Email</label>
       <input class="field-input" id="settingsEmail" disabled style="opacity:0.5;cursor:not-allowed" title="Email cannot be changed">
       <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace">Email address cannot be changed.</div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:8px">Subscription</div>
+      <div id="settingsSubStatus" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-bottom:12px"></div>
+      <button class="btn btn-ghost" style="font-size:11px;width:100%" onclick="manageSubscription()">Manage Subscription via Stripe</button>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="document.getElementById('userSettingsModal').classList.remove('open')">Cancel</button>

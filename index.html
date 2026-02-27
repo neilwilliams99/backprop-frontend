@@ -1066,8 +1066,7 @@ header {
   <!-- Dashboard Body -->
   <div class="dash-body">
     <div class="proj-screen-header">
-      <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
-      <div class="proj-screen-sub" id="dashWelcome">Back-Propping Design Tool</div>
+      <div class="proj-screen-logo">BACK<span>PROP</span></div>
     </div>
     <div class="proj-grid" id="projGrid"></div>
   </div>
@@ -3112,7 +3111,6 @@ function updateDashWelcome() {
   const last  = meta.last_name  || '';
   const name  = [first, last].filter(Boolean).join(' ');
   document.getElementById('dashUserName').textContent = name || currentUser.email || '';
-  document.getElementById('dashWelcome').textContent  = name ? `Welcome back, ${first || name}` : 'Back-Propping Design Tool';
 }
 
 // ════════════════════════════════════════════════

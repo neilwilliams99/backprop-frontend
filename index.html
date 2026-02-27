@@ -3326,15 +3326,16 @@ async function openUserSettings() {
     const res  = await fetch(`${API_URL}/subscription-status?user_id=${currentUser.id}`);
     const data = await res.json();
     if (data.access && data.reason === 'subscribed') {
-      statusEl.textContent = '✓ Active subscription';
-      statusEl.style.color = 'var(--tg)';
+      if (data.cancel_at_period_end) {
+        statusEl.innerHTML = `<span style="color:var(--accent)">⚠ Cancelled</span> <span style="color:var(--text-muted);font-size:10px">— access until ${data.renewal_date || 'end of period'}</span>`;
+      } else {
+        statusEl.innerHTML = `<span style="color:var(--tg)">✓ Active</span> <span style="color:var(--text-muted);font-size:10px">— renews ${data.renewal_date || 'next billing date'}</span>`;
+      }
     } else if (data.reason === 'trial') {
       const days = Math.ceil(getTrialDaysLeft(currentUser));
-      statusEl.textContent = `Free trial — ${days} day${days !== 1 ? 's' : ''} remaining`;
-      statusEl.style.color = 'var(--accent)';
+      statusEl.innerHTML = `<span style="color:var(--accent)">Free trial</span> <span style="color:var(--text-muted);font-size:10px">— ${days} day${days !== 1 ? 's' : ''} remaining</span>`;
     } else {
-      statusEl.textContent = 'No active subscription';
-      statusEl.style.color = 'var(--np)';
+      statusEl.innerHTML = `<span style="color:var(--np)">No active subscription</span>`;
     }
   } catch(e) {
     statusEl.textContent = 'Could not load status';

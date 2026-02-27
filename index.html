@@ -2025,6 +2025,11 @@ function saveModalProp() {
   renderModalPropTable();
   reconcilePropIds();
   markDirty();
+  // Refresh zone dropdowns if zones page is currently open
+  if (currentZoneLevelId) {
+    const lev = levels.find(l => l.id === currentZoneLevelId);
+    if (lev) renderZones(lev);
+  }
 }
 
 function showModalPropForm(editIdx) {
@@ -2114,6 +2119,10 @@ function removeProp(i) {
   reconcilePropIds();
   renderModalPropTable();
   showToast('Prop removed', 'info');
+  if (currentZoneLevelId) {
+    const lev = levels.find(l => l.id === currentZoneLevelId);
+    if (lev) renderZones(lev);
+  }
 }
 
 // function clearPropForm() removed - props now in project settings modal
@@ -2722,7 +2731,11 @@ function saveProjSettings() {
   calcResults = null;
   markDirty();
   closeProjModal();
-  // silent save
+  // Refresh zone dropdowns in case props changed
+  if (currentZoneLevelId) {
+    const lev = levels.find(l => l.id === currentZoneLevelId);
+    if (lev) renderZones(lev);
+  }
 }
 
 // ════════════════════════════════════════════════

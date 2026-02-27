@@ -2215,6 +2215,7 @@ function runCalc() {
 
       const pourResult = {
         levelId: lev.id,
+        zoneId: zone.id,
         levelName: lev.name,
         zoneName: zone.name,
         label: `${lev.name} · ${zone.name}`,
@@ -2272,6 +2273,7 @@ function runCalc() {
             // For base level AND intermediate levels in T/G case:
             // props carry the FULL wet load. Compute spacing based on prop cap.
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
+            if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
             const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
             const cappedSpacing = Math.min(propSpacing, maxSp);
             const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
@@ -2301,6 +2303,7 @@ function runCalc() {
             if (!blev) return;
 
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
+            if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
             let propSpacing = null;
             let status = '';
 
@@ -2426,16 +2429,18 @@ function renderEngineerView() {
 
   // helper: get prop label for a zone/level entry
   function getPropLabel(r, levelName) {
-    const lev = levels.find(l => l.name === r.levelName);
+    const lev = levels.find(l => l.id === r.levelId);
     if (!lev) return '—';
-    const zone = lev.zones.find(z => z.name === r.zoneName);
+    const zone = r.zoneId ? lev.zones.find(z => z.id === r.zoneId) : lev.zones.find(z => z.name === r.zoneName);
     if (!zone) return '—';
     const bl = zone.levelsBelow.find(b => {
       const bl2 = levels.find(l => l.id === b.levelId);
       return bl2 && bl2.name === levelName;
     });
     if (!bl || !bl.active) return '—';
-    const prop = props.find(p => p.id === bl.propId);
+    // Use snapshot type first, fall back to library
+    if (bl.propSnapshot) return bl.propSnapshot.type;
+    const prop = getProps().find(p => p.id === bl.propId);
     return prop ? prop.type : '—';
   }
 

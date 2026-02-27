@@ -1795,6 +1795,7 @@ function makeBlEntry(levelId, active, slabCap, addLoad) {
     active,
     slabCap,
     addLoad,
+    sm: 1.0,
     propId,
     propSnapshot: libProp ? { type: libProp.type, capacity: libProp.capacity } : null,
     propCapOverride: null,
@@ -2024,6 +2025,11 @@ function renderZones(lev) {
             : `<input class="zone-lvl-input" type="number" value="${bl.slabCap}" step="0.5" ${disabledAttr}
                 title="Slab capacity (kPa)"
                 onchange="setZoneLevelField('${lev.id}',${zi},${bli},'slabCap',+this.value)">`}
+          ${isGnd
+            ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">—</div>`
+            : `<input class="zone-lvl-input" type="number" value="${(bl.sm ?? 1.00).toFixed(2)}" step="0.05" min="0.1" max="1.0" ${disabledAttr}
+                title="Slab stiffness modifier (multiplies slab capacity)"
+                onchange="setZoneLevelField('${lev.id}',${zi},${bli},'sm',+this.value)">`}
           <input class="zone-lvl-input" type="number" value="${bl.addLoad}" step="0.5" ${disabledAttr}
             title="Additional construction load (kPa)"
             onchange="setZoneLevelField('${lev.id}',${zi},${bli},'addLoad',+this.value)">
@@ -2074,6 +2080,7 @@ function renderZones(lev) {
               <div class="zone-col-head"></div>
               <div class="zone-col-head">Level</div>
               <div class="zone-col-head">Slab Cap<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
+              <div class="zone-col-head">SM<br><span style="font-weight:400;text-transform:none;font-size:8px">×</span></div>
               <div class="zone-col-head">Add Load<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
               <div class="zone-col-head">Prop Selection</div>
             </div>
@@ -2492,19 +2499,23 @@ function runCalc() {
               propSpacing = null;
             }
 
+            const effCap = bl.slabCap * (bl.sm ?? 1.0);
             pourResult.levels.push({
               name: blev.name,
               isGround: false,
               cumulativeLoad: cumLoad,
               capacity: bl.slabCap,
+              sm: bl.sm ?? 1.0,
+              effectiveCapacity: effCap,
               propCap: propCapKN,
-              netLoad: Math.max(0, cumLoad - bl.slabCap),
+              netLoad: Math.max(0, cumLoad - effCap),
               status,
               propSpacing,
               propId: bl.propId,
             });
 
-            cumLoad = Math.max(0, cumLoad - bl.slabCap);
+            const effectiveCap = bl.slabCap * (bl.sm ?? 1.0);
+            cumLoad = Math.max(0, cumLoad - effectiveCap);
           });
 
           // Check for remainder — any load not absorbed = FAIL
@@ -2735,6 +2746,29 @@ function renderEngineerView() {
       const cap = entry.capacity;
       const cls = cap === null ? 'cell-empty' : 'cell-ok';
       matHtml += `<td class="${cls}">${cap !== null ? cap.toFixed(2) : '—'}</td>`;
+    });
+    matHtml += `</tr>`;
+  });
+  matHtml += `</tbody></table></div></div>`;
+
+  // ── 5. Slab Stiffness Modifier Matrix ───────────────────────────────────────
+  matHtml += `<div style="flex:1;min-width:300px">
+    <div class="results-title">Slab Stiffness Modifier <span class="tag">SM</span></div>
+    <div class="results-sub">SM applied to slab capacity at each level. 1.00 = full capacity, &lt;1.00 = reduced</div>
+    <div class="matrix-container">
+      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+
+  rowNames.forEach(levelName => {
+    const isBaseRow = levels.length > 0 && levels[0].name === levelName;
+    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
+    calcResults.forEach(r => {
+      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      if (isBaseRow) { matHtml += `<td class="cell-tg" style="font-size:13px">∞</td>`; return; }
+      const sm = entry.sm ?? 1.0;
+      const cls = sm >= 1.0 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np';
+      matHtml += `<td class="${cls}">${sm.toFixed(2)}</td>`;
     });
     matHtml += `</tr>`;
   });

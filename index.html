@@ -1010,40 +1010,123 @@ header {
 </div>
 
 <!-- ══ AUTH SCREEN ══ -->
-<div id="authScreen" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:9999;align-items:center;justify-content:center;flex-direction:column">
-  <div style="width:360px">
-    <div style="text-align:center;margin-bottom:32px">
-      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:28px;letter-spacing:-0.5px">BACK<span style="color:#e8a020">PROP</span></div>
-      <div style="font-size:10px;font-family:'DM Mono',monospace;color:#7d8590;letter-spacing:1px;margin-top:4px">BY IKB ENGINEERING</div>
+<div id="authScreen" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:9999;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;flex-direction:column">
+
+    <!-- Top nav bar -->
+    <div style="display:flex;align-items:center;padding:16px 32px;border-bottom:1px solid #1e2a3a;flex-shrink:0">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:-0.5px">BACK<span style="color:#e8a020">PROP</span></div>
+      <div style="font-size:9px;font-family:'DM Mono',monospace;color:#7d8590;letter-spacing:1px;margin-left:10px;margin-top:3px">BY IKB ENGINEERING</div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button onclick="setAuthMode('signin')" style="background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:7px 16px;border-radius:5px;cursor:pointer">Sign In</button>
+        <button onclick="setAuthMode('signup')" style="background:#e8a020;border:none;color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:11px;padding:7px 16px;border-radius:5px;cursor:pointer">Start Free Trial</button>
+      </div>
     </div>
-    <div style="background:#111720;border:1px solid #2a3447;border-radius:12px;padding:28px">
-      <div style="display:flex;margin-bottom:24px;background:#0a0e13;border-radius:6px;padding:3px;border:1px solid #2a3447">
-        <button id="tabSignin" style="flex:1;padding:6px;border:none;border-radius:4px;background:#161e2a;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signin')">Sign In</button>
-        <button id="tabSignup" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:#7d8590;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signup')">Sign Up</button>
+
+    <!-- Main content: hero left, form right -->
+    <div style="display:flex;flex:1;flex-wrap:wrap">
+
+      <!-- LEFT: Hero + Pricing -->
+      <div style="flex:1;min-width:320px;padding:60px 48px;display:flex;flex-direction:column;gap:48px">
+
+        <!-- Hero -->
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:42px;line-height:1.1;letter-spacing:-1px;margin-bottom:16px">
+            Back-propping<br>design,<br><span style="color:#e8a020">done properly.</span>
+          </div>
+          <div style="font-size:13px;color:#7d8590;font-family:'DM Mono',monospace;line-height:1.7;max-width:420px">
+            BackProp is a professional engineering tool for calculating prop spacings, back-propping arrangements, and generating construction documentation — built for structural engineers.
+          </div>
+          <div style="display:flex;gap:24px;margin-top:28px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="color:#38c96e;font-size:16px">✓</span>
+              <span style="font-size:11px;color:#a0aec0;font-family:'DM Mono',monospace">AS 3610 / Z36 compliant</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="color:#38c96e;font-size:16px">✓</span>
+              <span style="font-size:11px;color:#a0aec0;font-family:'DM Mono',monospace">Engineer & builder views</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="color:#38c96e;font-size:16px">✓</span>
+              <span style="font-size:11px;color:#a0aec0;font-family:'DM Mono',monospace">Multi-project management</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing card -->
+        <div style="background:#111720;border:1px solid #2a3447;border-radius:12px;padding:28px;max-width:420px">
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:#e8a020;letter-spacing:1.5px;margin-bottom:12px">PRICING</div>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:6px">
+            <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:36px;color:#dde8f5">A$30</span>
+            <span style="font-family:'DM Mono',monospace;font-size:12px;color:#7d8590">/month</span>
+          </div>
+          <div style="font-size:11px;color:#7d8590;font-family:'DM Mono',monospace;margin-bottom:20px">Per user · Cancel anytime · Secure payments via Stripe</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="color:#38c96e;font-size:13px;flex-shrink:0">✓</span>
+              <span style="font-size:12px;color:#a0aec0;font-family:'DM Mono',monospace">Unlimited projects & zones</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="color:#38c96e;font-size:13px;flex-shrink:0">✓</span>
+              <span style="font-size:12px;color:#a0aec0;font-family:'DM Mono',monospace">Engineer + builder output views</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="color:#38c96e;font-size:13px;flex-shrink:0">✓</span>
+              <span style="font-size:12px;color:#a0aec0;font-family:'DM Mono',monospace">Prop library management</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="color:#38c96e;font-size:13px;flex-shrink:0">✓</span>
+              <span style="font-size:12px;color:#a0aec0;font-family:'DM Mono',monospace">Export results & reports</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="color:#e8a020;font-size:13px;flex-shrink:0">★</span>
+              <span style="font-size:12px;color:#e8a020;font-family:'DM Mono',monospace">7-day free trial — no card required</span>
+            </div>
+          </div>
+          <button onclick="setAuthMode('signup')" style="width:100%;padding:11px;background:#e8a020;border:none;border-radius:6px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#000;cursor:pointer">Start Free Trial →</button>
+          <div style="text-align:center;margin-top:10px;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace">No credit card needed to start</div>
+        </div>
+
       </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div id="authNameFields" style="display:none;gap:8px;grid-template-columns:1fr 1fr">
-          <div>
-            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">FIRST NAME</label>
-            <input id="authFirstName" type="text" placeholder="First" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+
+      <!-- RIGHT: Auth form -->
+      <div style="width:380px;min-width:320px;padding:60px 40px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #1e2a3a">
+        <div style="margin-bottom:28px">
+          <div id="authFormTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:20px;margin-bottom:4px">Sign In</div>
+          <div id="authFormSub" style="font-size:11px;color:#7d8590;font-family:'DM Mono',monospace">Welcome back to BackProp.</div>
+        </div>
+        <div style="display:flex;margin-bottom:20px;background:#0a0e13;border-radius:6px;padding:3px;border:1px solid #2a3447">
+          <button id="tabSignin" style="flex:1;padding:6px;border:none;border-radius:4px;background:#161e2a;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signin')">Sign In</button>
+          <button id="tabSignup" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:#7d8590;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signup')">Sign Up</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div id="authNameFields" style="display:none;gap:8px;grid-template-columns:1fr 1fr">
+            <div>
+              <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">FIRST NAME</label>
+              <input id="authFirstName" type="text" placeholder="First" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+            </div>
+            <div>
+              <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">LAST NAME</label>
+              <input id="authLastName" type="text" placeholder="Last" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+            </div>
           </div>
           <div>
-            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">LAST NAME</label>
-            <input id="authLastName" type="text" placeholder="Last" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
+            <input id="authEmail" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
           </div>
+          <div>
+            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
+            <input id="authPassword" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')handleAuth()">
+          </div>
+          <div id="authError" style="display:none;color:#f05050;font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px"></div>
+          <button id="authBtn" onclick="handleAuth()" style="margin-top:4px;padding:10px;background:#e8a020;color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Sign In</button>
         </div>
-        <div>
-          <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
-          <input id="authEmail" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+        <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
+        <div style="margin-top:20px;text-align:center;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace">
+          Need help? <a href="mailto:neil.williams@ikbeng.com" style="color:#7d8590;text-decoration:none">Contact support</a>
         </div>
-        <div>
-          <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
-          <input id="authPassword" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')handleAuth()">
-        </div>
-        <div id="authError" style="display:none;color:#f05050;font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px"></div>
-        <button id="authBtn" onclick="handleAuth()" style="margin-top:4px;padding:10px;background:#e8a020;color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Sign In</button>
       </div>
-      <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
+
     </div>
   </div>
 </div>
@@ -1388,6 +1471,8 @@ function setAuthMode(mode) {
   authMode = mode;
   const nameFields = document.getElementById('authNameFields');
   nameFields.style.display = mode === 'signup' ? 'grid' : 'none';
+  document.getElementById('authFormTitle').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
+  document.getElementById('authFormSub').textContent   = mode === 'signup' ? 'Start your 7-day free trial.' : 'Welcome back to BackProp.';
   document.getElementById('tabSignin').style.background = mode === 'signin' ? '#161e2a' : 'transparent';
   document.getElementById('tabSignin').style.color = mode === 'signin' ? '#dde8f5' : '#7d8590';
   document.getElementById('tabSignup').style.background = mode === 'signup' ? '#161e2a' : 'transparent';

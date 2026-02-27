@@ -1495,9 +1495,7 @@ supa.auth.onAuthStateChange(async (event, session) => {
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('loadingScreen').style.display = 'none';
     await dbLoadProjects();
-    document.getElementById('projectListScreen').style.display = 'flex';
-    document.getElementById('appShell').style.display = 'none';
-    renderProjectList();
+    await showDashboardWithAccessCheck(currentUser);
   } else if (event === 'SIGNED_OUT') {
     currentUser = null;
     projectStore = [];
@@ -3167,22 +3165,41 @@ function showPaywall(reason) {
 
 async function startCheckout() {
   const btn = document.getElementById('paywallBtn');
-  btn.textContent = 'Redirecting to Stripe…';
+  btn.textContent = 'Connecting…';
   btn.disabled = true;
+
+  // Warn user if API takes a while (cold start on free Render tier)
+  const slowTimer = setTimeout(() => {
+    btn.textContent = 'Waking up server… (30s)';
+  }, 3000);
+
   try {
+    // 60 second timeout to handle Render cold start
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
     const res = await fetch(`${API_URL}/create-checkout-session`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: currentUser.id, email: currentUser.email }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
+    clearTimeout(slowTimer);
+
     const data = await res.json();
     if (data.url) {
+      btn.textContent = 'Redirecting to Stripe…';
       window.location.href = data.url;
     } else {
-      throw new Error('No checkout URL returned');
+      throw new Error(data.detail || 'No checkout URL returned');
     }
   } catch(e) {
-    showToast('Could not start checkout — please try again', 'error');
+    clearTimeout(slowTimer);
+    const msg = e.name === 'AbortError'
+      ? 'Server took too long to respond — please try again'
+      : 'Could not start checkout — please try again';
+    showToast(msg, 'error');
     btn.textContent = 'Subscribe Now';
     btn.disabled = false;
   }

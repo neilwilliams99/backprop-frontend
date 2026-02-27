@@ -1510,7 +1510,7 @@ async function dbSaveProject(p) {
     name:    p.project.name,
     job_no:  p.project.jobNo  || '',
     prep_by: p.project.prepBy || '',
-    data:    { project: p.project, levels: p.levels, calcResults: p.calcResults, props },
+    data:    { project: p.project, levels: p.levels, calcResults: p.calcResults },
   };
   if (p._supaId) {
     const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);

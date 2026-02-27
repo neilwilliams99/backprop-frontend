@@ -2144,20 +2144,21 @@ function runCalc() {
   // ── PRE-FLIGHT VALIDATION ────────────────────────────────────────────────
   const validPropIds = new Set(getProps().map(p => p.id));
 
-  // Check 1: prop library must not be empty
-  if (getProps().length === 0) {
-    showToast('Cannot calculate — prop library is empty. Add at least one prop before running.', 'error');
-    return;
-  }
+  // Check 1: skip — prop library can be empty if zones have snapshots or overrides
+  // (check 2 below catches any zones truly missing a prop)
 
-  // Check 2: every active levelsBelow entry must reference a valid prop
+  // Check 2: every active levelsBelow entry must have a usable prop
+  // A prop is usable if: propCapOverride set, OR propId in library, OR propSnapshot exists
   const missingPropZones = [];
   levels.forEach(lev => {
     if (isBaseLevel(lev)) return;
     lev.zones.forEach(zone => {
       zone.levelsBelow.forEach(bl => {
         if (!bl.active) return;
-        if (!bl.propId || !validPropIds.has(bl.propId)) {
+        const hasOverride = bl.propCapOverride !== null && bl.propCapOverride !== undefined;
+        const hasLibProp  = bl.propId && validPropIds.has(bl.propId);
+        const hasSnapshot = bl.propSnapshot && bl.propSnapshot.capacity > 0;
+        if (!hasOverride && !hasLibProp && !hasSnapshot) {
           missingPropZones.push(`${lev.name} · ${zone.name}`);
         }
       });

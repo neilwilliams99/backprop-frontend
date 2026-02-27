@@ -2639,134 +2639,101 @@ function renderEngineerView() {
   }).join('');
 
   // ── Matrices side-by-side wrapper ─────────────────────────────────────────
-  let matHtml = `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">`;
+  // ── 3x2 matrix grid ──────────────────────────────────────────────────────────
+  let matHtml = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start">`;
 
-  // ── 1. Prop Spacing Matrix ─────────────────────────────────────────────────
-  matHtml += `<div style="flex:1;min-width:300px">
-    <div class="results-title">Prop Spacing <span class="tag">m c/c</span></div>
-    <div class="results-sub">Min spacing at each back-prop level. Green = OK, Orange = tight (&lt;1.2m), Red = Fail</div>
-    <div class="matrix-container">
-      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+  // helper to build a matrix block
+  function matBlock(title, tag, sub, bodyFn) {
+    let html = `<div>
+      <div class="results-title">${title} <span class="tag">${tag}</span></div>
+      <div class="results-sub">${sub}</div>
+      <div class="matrix-container">
+        <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
+    rowNames.forEach(levelName => {
+      html += `<tr><td class="row-label">${esc(levelName)}</td>`;
+      calcResults.forEach(r => { html += bodyFn(r, levelName); });
+      html += `</tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+    return html;
+  }
 
-  rowNames.forEach(levelName => {
-    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
-    calcResults.forEach(r => {
-      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+  // ── 1. Prop Spacing ──────────────────────────────────────────────────────────
+  matHtml += matBlock('Prop Spacing','m c/c','Min spacing at each back-prop level. Green = OK, Orange = tight (&lt;1.2m), Red = Fail',
+    (r, levelName) => {
+      if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
-      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
-      if (entry.status === 'Fail' || r.isNP) { matHtml += `<td class="cell-np">Fail</td>`; return; }
+      if (!entry) return `<td class="cell-empty">—</td>`;
+      if (entry.status === 'Fail' || r.isNP) return `<td class="cell-np">Fail</td>`;
       const sp = entry.propSpacing;
-      const cls = !sp ? 'cell-empty' : sp < 1.2 ? 'cell-warn' : 'cell-ok';
-      matHtml += `<td class="${cls}">${sp ? sp.toFixed(2) : '—'}</td>`;
+      return `<td class="${!sp ? 'cell-empty' : sp < 1.2 ? 'cell-warn' : 'cell-ok'}">${sp ? sp.toFixed(2) : '—'}</td>`;
     });
-    matHtml += `</tr>`;
-  });
-  matHtml += `</tbody></table></div></div>`;
 
-  // ── 2. Prop Type Matrix ────────────────────────────────────────────────────
-  matHtml += `<div style="flex:1;min-width:300px">
-    <div class="results-title">Prop Type <span class="tag">LIBRARY</span></div>
-    <div class="results-sub">Prop selected at each back-prop level for each pour/zone</div>
-    <div class="matrix-container">
-      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
-
-  rowNames.forEach(levelName => {
-    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
-    calcResults.forEach(r => {
-      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+  // ── 2. Prop Type ─────────────────────────────────────────────────────────────
+  matHtml += matBlock('Prop Type','LIBRARY','Prop selected at each back-prop level for each pour/zone',
+    (r, levelName) => {
+      if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
-      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      if (!entry) return `<td class="cell-empty">—</td>`;
       const label = getPropLabel(r, levelName);
-      const cls = label === '—' ? 'cell-empty' : 'cell-ok';
-      matHtml += `<td class="${cls}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(label)}">${esc(label)}</td>`;
+      return `<td class="${label === '—' ? 'cell-empty' : 'cell-ok'}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(label)}">${esc(label)}</td>`;
     });
-    matHtml += `</tr>`;
-  });
-  matHtml += `</tbody></table></div></div>`;
 
-  matHtml += `</div>`; // end side-by-side row 1
-
-  // ── Second row: Cumulative Load + Slab Capacity ───────────────────────────
-  matHtml += `<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:20px">`;
-
-  // ── 3. Cumulative Load Matrix (with red for fail) ─────────────────────────
-  matHtml += `<div style="flex:1;min-width:300px">
-    <div class="results-title">Cumulative Load <span class="tag">kPa</span></div>
-    <div class="results-sub">Cumulative wet load at each level. Red = unresolved load (Fail)</div>
-    <div class="matrix-container">
-      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
-
-  rowNames.forEach(levelName => {
-    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
-    calcResults.forEach(r => {
-      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">${r.totalLoad.toFixed(2)}</td>`; return; }
+  // ── 3. Cumulative Load ───────────────────────────────────────────────────────
+  matHtml += matBlock('Cumulative Load','kPa','Cumulative wet load at each level. Red = unresolved load (Fail)',
+    (r, levelName) => {
+      if (r.levelName === levelName) return `<td class="cell-wet">${r.totalLoad.toFixed(2)}</td>`;
       const entry = r.levels.find(l => l.name === levelName);
-      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
+      if (!entry) return `<td class="cell-empty">—</td>`;
       const load = entry.cumulativeLoad;
-      let cls;
-      if (r.isNP) {
-        cls = 'cell-np';
-      } else if (load <= 0) {
-        cls = 'cell-tg';
-      } else if (load > r.totalLoad * 0.8) {
-        cls = 'cell-warn';
-      } else {
-        cls = 'cell-ok';
-      }
-      matHtml += `<td class="${cls}">${load.toFixed(2)}</td>`;
+      const cls = r.isNP ? 'cell-np' : load <= 0 ? 'cell-tg' : load > r.totalLoad * 0.8 ? 'cell-warn' : 'cell-ok';
+      return `<td class="${cls}">${load.toFixed(2)}</td>`;
     });
-    matHtml += `</tr>`;
-  });
-  matHtml += `</tbody></table></div></div>`;
 
-  // ── 4. Slab Capacity Matrix ────────────────────────────────────────────────
-  matHtml += `<div style="flex:1;min-width:300px">
-    <div class="results-title">Slab Capacity <span class="tag">kPa</span></div>
-    <div class="results-sub">Slab capacity at each back-prop level for each pour/zone</div>
-    <div class="matrix-container">
-      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
-
-  rowNames.forEach(levelName => {
-    const isBaseRow = levels.length > 0 && levels[0].name === levelName;
-    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
-    calcResults.forEach(r => {
-      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+  // ── 4. Slab Capacity ─────────────────────────────────────────────────────────
+  matHtml += matBlock('Slab Capacity','kPa','Slab capacity at each back-prop level for each pour/zone',
+    (r, levelName) => {
+      const isBaseRow = levels.length > 0 && levels[0].name === levelName;
+      if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
-      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
-      // Base level: show ∞ symbol since it has effectively infinite capacity
-      if (isBaseRow) { matHtml += `<td class="cell-tg" style="font-size:13px">∞</td>`; return; }
+      if (!entry) return `<td class="cell-empty">—</td>`;
+      if (isBaseRow) return `<td class="cell-tg" style="font-size:13px">∞</td>`;
       const cap = entry.capacity;
-      const cls = cap === null ? 'cell-empty' : 'cell-ok';
-      matHtml += `<td class="${cls}">${cap !== null ? cap.toFixed(2) : '—'}</td>`;
+      return `<td class="${cap === null ? 'cell-empty' : 'cell-ok'}">${cap !== null ? cap.toFixed(2) : '—'}</td>`;
     });
-    matHtml += `</tr>`;
-  });
-  matHtml += `</tbody></table></div></div>`;
 
-  // ── 5. Slab Stiffness Modifier Matrix ───────────────────────────────────────
-  matHtml += `<div style="flex:1;min-width:300px">
-    <div class="results-title">Slab Stiffness Modifier <span class="tag">SM</span></div>
-    <div class="results-sub">SM applied to slab capacity at each level. 1.00 = full capacity, &lt;1.00 = reduced</div>
-    <div class="matrix-container">
-      <table class="matrix-table"><thead><tr><th>Level</th>${colHeaders}</tr></thead><tbody>`;
-
-  rowNames.forEach(levelName => {
-    const isBaseRow = levels.length > 0 && levels[0].name === levelName;
-    matHtml += `<tr><td class="row-label">${esc(levelName)}</td>`;
-    calcResults.forEach(r => {
-      if (r.levelName === levelName) { matHtml += `<td class="cell-wet">WET</td>`; return; }
+  // ── 5. Slab Stiffness Modifier ───────────────────────────────────────────────
+  matHtml += matBlock('Slab Stiffness Modifier','SM','SM applied to slab capacity. 1.00 = full capacity, &lt;1.00 = reduced',
+    (r, levelName) => {
+      const isBaseRow = levels.length > 0 && levels[0].name === levelName;
+      if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
-      if (!entry) { matHtml += `<td class="cell-empty">—</td>`; return; }
-      if (isBaseRow) { matHtml += `<td class="cell-tg" style="font-size:13px">∞</td>`; return; }
+      if (!entry) return `<td class="cell-empty">—</td>`;
+      if (isBaseRow) return `<td class="cell-tg" style="font-size:13px">∞</td>`;
       const sm = entry.sm ?? 1.0;
-      const cls = sm >= 1.0 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np';
-      matHtml += `<td class="${cls}">${sm.toFixed(2)}</td>`;
+      return `<td class="${sm >= 1.0 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np'}">${sm.toFixed(2)}</td>`;
     });
-    matHtml += `</tr>`;
-  });
-  matHtml += `</tbody></table></div></div>`;
 
-  matHtml += `</div>`; // end side-by-side row 2
+  // ── 6. Additional Load ───────────────────────────────────────────────────────
+  matHtml += matBlock('Additional Load','kPa','Construction load applied at each back-prop level for each pour/zone',
+    (r, levelName) => {
+      const isBaseRow = levels.length > 0 && levels[0].name === levelName;
+      if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
+      const entry = r.levels.find(l => l.name === levelName);
+      if (!entry) return `<td class="cell-empty">—</td>`;
+      if (isBaseRow) return `<td class="cell-tg">—</td>`;
+      // look up addLoad from the zone data
+      const lev = levels.find(l => l.name === r.levelName);
+      const zone = lev ? lev.zones.find(z => z.name === r.zoneName) : null;
+      const bl = zone ? zone.levelsBelow.find(b => {
+        const bLevel = levels.find(ll => ll.name === levelName);
+        return bLevel && b.levelId === bLevel.id;
+      }) : null;
+      const addLoad = bl ? bl.addLoad : null;
+      return `<td class="${addLoad === null ? 'cell-empty' : 'cell-ok'}">${addLoad !== null ? addLoad.toFixed(2) : '—'}</td>`;
+    });
+
+  matHtml += `</div>`; // end 3x2 grid
 
   // ── Pour Scenario Detail cards ─────────────────────────────────────────────
   matHtml += `<div class="results-title" style="margin-top:20px">Pour Scenario Detail</div>

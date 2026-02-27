@@ -3319,11 +3319,25 @@ async function openUserSettings() {
   document.getElementById('settingsLastName').value  = meta.last_name  || '';
   document.getElementById('settingsEmail').value     = currentUser?.email || '';
 
-  // Load subscription status
+  // Load subscription status — use checkAccess which handles trial logic
   const statusEl = document.getElementById('settingsSubStatus');
   statusEl.textContent = 'Checking…';
+  statusEl.style.color = 'var(--text-muted)';
+
+  // First show trial status immediately (no API needed)
+  const trialDaysLeft = getTrialDaysLeft(currentUser);
+  const trialEndDate  = new Date(new Date(currentUser.created_at).getTime() + 7*24*60*60*1000);
+  const trialEndStr   = trialEndDate.toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' });
+
+  if (trialDaysLeft > 0) {
+    statusEl.innerHTML = `<span style="color:var(--accent)">Free trial</span> <span style="color:var(--text-muted);font-size:10px">— ${Math.ceil(trialDaysLeft)} day${Math.ceil(trialDaysLeft) !== 1 ? 's' : ''} remaining, ends ${trialEndStr}</span>`;
+  }
+
+  // Then try API for paid subscription details
   try {
-    const res  = await fetch(`${API_URL}/subscription-status?user_id=${currentUser.id}`);
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 8000);
+    const res  = await fetch(`${API_URL}/subscription-status?user_id=${currentUser.id}`, { signal: controller.signal });
     const data = await res.json();
     if (data.access && data.reason === 'subscribed') {
       if (data.cancel_at_period_end) {
@@ -3331,15 +3345,15 @@ async function openUserSettings() {
       } else {
         statusEl.innerHTML = `<span style="color:var(--tg)">✓ Active</span> <span style="color:var(--text-muted);font-size:10px">— renews ${data.renewal_date || 'next billing date'}</span>`;
       }
-    } else if (data.reason === 'trial') {
-      const days = Math.ceil(getTrialDaysLeft(currentUser));
-      statusEl.innerHTML = `<span style="color:var(--accent)">Free trial</span> <span style="color:var(--text-muted);font-size:10px">— ${days} day${days !== 1 ? 's' : ''} remaining</span>`;
-    } else {
-      statusEl.innerHTML = `<span style="color:var(--np)">No active subscription</span>`;
+    } else if (trialDaysLeft <= 0) {
+      statusEl.innerHTML = `<span style="color:var(--np)">Trial expired</span> <span style="color:var(--text-muted);font-size:10px">— subscribe to continue</span>`;
     }
+    // else: trial status already shown above
   } catch(e) {
-    statusEl.textContent = 'Could not load status';
-    statusEl.style.color = 'var(--text-muted)';
+    // API unavailable — trial status already shown, leave it
+    if (trialDaysLeft <= 0) {
+      statusEl.innerHTML = `<span style="color:var(--text-muted)">Status unavailable</span>`;
+    }
   }
 
   document.getElementById('userSettingsModal').classList.add('open');

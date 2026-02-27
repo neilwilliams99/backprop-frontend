@@ -1526,10 +1526,19 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
-  const name = prompt('Project name:', 'Project ' + (projectStore.length + 1));
-  if (name === null) return;
-  const jobNo = prompt('Job number (optional):', '');
-  if (jobNo === null) return;
+  const result = await dlgPrompt(
+    'New Project',
+    'Enter project details to get started.',
+    'Project name…',
+    'Project ' + (projectStore.length + 1),
+    'Job number (optional)',
+    'e.g. 10354',
+    '',
+    'Create Project'
+  );
+  if (!result) return;
+  const name  = result.v1.trim() || ('Project ' + (projectStore.length + 1));
+  const jobNo = result.v2.trim();
   const p = makeNewProjectData(name, jobNo);
   p._supaId = null;
   projectStore.unshift(p);
@@ -1566,7 +1575,8 @@ function showProjectList() {
 }
 
 async function deleteProject(id) {
-  if (!confirm('Delete this project? This cannot be undone.')) return;
+  const ok = await dlgConfirm('Delete project?', 'This cannot be undone.', 'Delete');
+  if (!ok) return;
   const p = projectStore.find(x => x.id === id);
   if (p && p._supaId) await supa.from('projects').delete().eq('id', p._supaId);
   projectStore = projectStore.filter(x => x.id !== id);
@@ -2959,11 +2969,103 @@ function showToast(msg, type = 'success', duration = 5000) {
   }, duration);
 }
 
+
+// ════════════════════════════════════════════════
+//  CUSTOM DIALOG (replaces browser prompt/confirm)
+// ════════════════════════════════════════════════
+let _dialogResolve = null;
+
+function _openDialog({ title, sub='', confirmText='Confirm', confirmClass='btn-accent', dangerConfirm=false,
+                       input=null, inputPlaceholder='', inputDefault='',
+                       input2Label='', input2Placeholder='', input2Default='' }) {
+  document.getElementById('dialogTitle').textContent = title;
+  document.getElementById('dialogSub').textContent = sub;
+  document.getElementById('dialogSub').style.display = sub ? 'block' : 'none';
+
+  const inputWrap = document.getElementById('dialogInputWrap');
+  const inp = document.getElementById('dialogInput');
+  if (input) {
+    inputWrap.style.display = 'block';
+    inp.placeholder = inputPlaceholder;
+    inp.value = inputDefault;
+    const input2Wrap = document.getElementById('dialogInput2Wrap');
+    if (input2Label) {
+      input2Wrap.style.display = 'block';
+      document.getElementById('dialogInput2Label').textContent = input2Label;
+      document.getElementById('dialogInput2').placeholder = input2Placeholder;
+      document.getElementById('dialogInput2').value = input2Default;
+    } else {
+      input2Wrap.style.display = 'none';
+    }
+  } else {
+    inputWrap.style.display = 'none';
+    document.getElementById('dialogInput2Wrap').style.display = 'none';
+  }
+
+  const confirmBtn = document.getElementById('dialogConfirm');
+  confirmBtn.textContent = confirmText;
+  confirmBtn.className = 'btn ' + (dangerConfirm ? 'btn-danger' : confirmClass);
+
+  document.getElementById('customDialog').classList.add('open');
+  if (input) setTimeout(() => inp.focus(), 50);
+
+  return new Promise(resolve => {
+    _dialogResolve = resolve;
+  });
+}
+
+function _closeDialog(result) {
+  document.getElementById('customDialog').classList.remove('open');
+  if (_dialogResolve) { _dialogResolve(result); _dialogResolve = null; }
+}
+
+document.getElementById('dialogCancel').onclick  = () => _closeDialog(null);
+document.getElementById('dialogConfirm').onclick = () => {
+  const inp  = document.getElementById('dialogInput').value;
+  const inp2 = document.getElementById('dialogInput2').value;
+  const inputVisible = document.getElementById('dialogInputWrap').style.display !== 'none';
+  _closeDialog(inputVisible ? { v1: inp, v2: inp2 } : true);
+};
+document.getElementById('dialogInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('dialogConfirm').click();
+  if (e.key === 'Escape') _closeDialog(null);
+});
+document.getElementById('customDialog').addEventListener('click', e => {
+  if (e.target === document.getElementById('customDialog')) _closeDialog(null);
+});
+
+async function dlgConfirm(title, sub='', confirmText='Delete', danger=true) {
+  return _openDialog({ title, sub, confirmText, dangerConfirm: danger });
+}
+
+async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', input2Label='', input2Placeholder='', input2Default='', confirmText='Create') {
+  return _openDialog({ title, sub, input: true, inputPlaceholder, inputDefault, input2Label, input2Placeholder, input2Default, confirmText });
+}
+
 // ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
 // Projects loaded from Supabase after login via onAuthStateChange
 
 </script>
+
+<!-- ══ CUSTOM DIALOG (replaces alert/confirm/prompt) ══ -->
+<div class="modal-overlay" id="customDialog">
+  <div class="modal" style="width:400px">
+    <div class="modal-title" id="dialogTitle"></div>
+    <div class="modal-sub" id="dialogSub" style="margin-bottom:14px"></div>
+    <div id="dialogInputWrap" style="display:none;margin-bottom:4px">
+      <input class="field-input" id="dialogInput" style="width:100%;box-sizing:border-box">
+    </div>
+    <div id="dialogInput2Wrap" style="display:none;margin-top:8px">
+      <label class="field-label" id="dialogInput2Label"></label>
+      <input class="field-input" id="dialogInput2" style="width:100%;box-sizing:border-box">
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" id="dialogCancel">Cancel</button>
+      <button class="btn btn-accent" id="dialogConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

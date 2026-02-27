@@ -921,13 +921,32 @@ header {
   position: fixed; inset: 0; z-index: 500;
   background: var(--bg);
   display: flex; flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   overflow-y: auto;
-  padding: 60px 24px 40px;
+}
+.dash-header {
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.dash-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 40px;
+  flex: 1;
 }
 .proj-screen-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 36px;
 }
 .proj-screen-logo {
   font-family: 'Syne', sans-serif;
@@ -1003,6 +1022,16 @@ header {
         <button id="tabSignup" style="flex:1;padding:6px;border:none;border-radius:4px;background:transparent;color:#7d8590;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer" onclick="setAuthMode('signup')">Sign Up</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:12px">
+        <div id="authNameFields" style="display:none;gap:8px;grid-template-columns:1fr 1fr">
+          <div>
+            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">FIRST NAME</label>
+            <input id="authFirstName" type="text" placeholder="First" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+          </div>
+          <div>
+            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">LAST NAME</label>
+            <input id="authLastName" type="text" placeholder="Last" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
+          </div>
+        </div>
         <div>
           <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
           <input id="authEmail" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
@@ -1022,11 +1051,26 @@ header {
 
 <!-- ══ PROJECT LIST SCREEN ══ -->
 <div id="projectListScreen" style="display:none">
-  <div class="proj-screen-header">
-    <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
-    <div class="proj-screen-sub">IKB Engineering — Back-Propping Design Tool</div>
+  <!-- Dashboard Header -->
+  <div class="dash-header">
+    <div class="logo">
+      <div>BACK<span>PROP</span></div>
+      <div class="logo-byline">By IKB Engineering</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <span id="dashUserName" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted)"></span>
+      <button class="btn btn-ghost" onclick="openUserSettings()" style="font-size:11px" title="User settings">⚙ Settings</button>
+      <button class="btn btn-ghost" onclick="signOut()" style="font-size:11px" title="Sign out">⎋ Sign out</button>
+    </div>
   </div>
-  <div class="proj-grid" id="projGrid"></div>
+  <!-- Dashboard Body -->
+  <div class="dash-body">
+    <div class="proj-screen-header">
+      <div class="proj-screen-logo">BACK<span>PROP</span><sub style="font-size:11px;font-family:'DM Mono';font-weight:300;color:var(--text-muted);margin-left:4px;letter-spacing:1px">v2</sub></div>
+      <div class="proj-screen-sub" id="dashWelcome">Back-Propping Design Tool</div>
+    </div>
+    <div class="proj-grid" id="projGrid"></div>
+  </div>
 </div>
 
 <!-- ══ APP SHELL (hidden until logged in) ══ -->
@@ -1052,7 +1096,6 @@ header {
     </button>
     <button class="btn btn-ghost" onclick="openImport()">⬆ Import</button>
     <button class="btn btn-ghost" onclick="exportResults()">⬇ Export</button>
-    <button class="btn btn-ghost" onclick="signOut()" style="font-size:10px" title="Sign out">⎋ Sign out</button>
     <button class="btn btn-accent" id="calcBtn" onclick="runCalc()">▶ Calculate</button>
   </div>
 </header>
@@ -1320,6 +1363,8 @@ let authMode = 'signin';
 
 function setAuthMode(mode) {
   authMode = mode;
+  const nameFields = document.getElementById('authNameFields');
+  nameFields.style.display = mode === 'signup' ? 'grid' : 'none';
   document.getElementById('tabSignin').style.background = mode === 'signin' ? '#161e2a' : 'transparent';
   document.getElementById('tabSignin').style.color = mode === 'signin' ? '#dde8f5' : '#7d8590';
   document.getElementById('tabSignup').style.background = mode === 'signup' ? '#161e2a' : 'transparent';
@@ -1339,7 +1384,9 @@ async function handleAuth() {
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
   document.getElementById('authBtn').textContent = '…';
   if (authMode === 'signup') {
-    const { data, error } = await supa.auth.signUp({ email, password });
+    const firstName = document.getElementById('authFirstName').value.trim();
+    const lastName  = document.getElementById('authLastName').value.trim();
+    const { data, error } = await supa.auth.signUp({ email, password, options: { data: { first_name: firstName, last_name: lastName } } });
     if (error) {
       errEl.textContent = error.message;
       errEl.style.display = 'block';
@@ -1368,6 +1415,8 @@ async function handleAuth() {
   document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
   // Clear password field after any attempt; clear email too on successful signup
   document.getElementById('authPassword').value = '';
+  document.getElementById('authFirstName').value = '';
+  document.getElementById('authLastName').value = '';
 }
 
 async function signOut() {
@@ -1392,6 +1441,7 @@ async function initAuth() {
       currentUser = session.user;
         await dbLoadProjects();
       document.getElementById('projectListScreen').style.display = 'flex';
+      updateDashWelcome();
       renderProjectList();
     } else {
       document.getElementById('authScreen').style.display = 'flex';
@@ -1571,6 +1621,7 @@ function showProjectList() {
   saveActiveProject();
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('projectListScreen').style.display = 'flex';
+  updateDashWelcome();
   renderProjectList();
 }
 
@@ -3029,6 +3080,41 @@ async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', in
   return _openDialog({ title, sub, input: true, inputPlaceholder, inputDefault, input2Label, input2Placeholder, input2Default, confirmText });
 }
 
+
+// ════════════════════════════════════════════════
+//  USER SETTINGS
+// ════════════════════════════════════════════════
+function openUserSettings() {
+  const meta = currentUser?.user_metadata || {};
+  document.getElementById('settingsFirstName').value = meta.first_name || '';
+  document.getElementById('settingsLastName').value  = meta.last_name  || '';
+  document.getElementById('settingsEmail').value     = currentUser?.email || '';
+  document.getElementById('userSettingsModal').classList.add('open');
+}
+
+async function saveUserSettings() {
+  const firstName = document.getElementById('settingsFirstName').value.trim();
+  const lastName  = document.getElementById('settingsLastName').value.trim();
+  const { data, error } = await supa.auth.updateUser({
+    data: { first_name: firstName, last_name: lastName }
+  });
+  if (error) { showToast('Error saving settings', 'error'); return; }
+  currentUser = data.user;
+  updateDashWelcome();
+  document.getElementById('userSettingsModal').classList.remove('open');
+  showToast('Settings saved', 'success');
+}
+
+function updateDashWelcome() {
+  if (!currentUser) return;
+  const meta = currentUser.user_metadata || {};
+  const first = meta.first_name || '';
+  const last  = meta.last_name  || '';
+  const name  = [first, last].filter(Boolean).join(' ');
+  document.getElementById('dashUserName').textContent = name || currentUser.email || '';
+  document.getElementById('dashWelcome').textContent  = name ? `Welcome back, ${first || name}` : 'Back-Propping Design Tool';
+}
+
 // ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
@@ -3053,6 +3139,31 @@ async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', in
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn btn-ghost" id="dialogCancel" onclick="_closeDialog(null)">Cancel</button>
       <button class="btn btn-accent" id="dialogConfirm" onclick="(function(){const inp=document.getElementById('dialogInput').value;const inp2=document.getElementById('dialogInput2').value;const vis=document.getElementById('dialogInputWrap').style.display!=='none';_closeDialog(vis?{v1:inp,v2:inp2}:true)})()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="userSettingsModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">User Settings</div>
+    <div class="modal-sub">Update your profile details.</div>
+    <div class="field-group">
+      <label class="field-label">First Name</label>
+      <input class="field-input" id="settingsFirstName" placeholder="First name">
+    </div>
+    <div class="field-group" style="margin-top:8px">
+      <label class="field-label">Last Name</label>
+      <input class="field-input" id="settingsLastName" placeholder="Last name">
+    </div>
+    <div class="field-group" style="margin-top:8px">
+      <label class="field-label">Email</label>
+      <input class="field-input" id="settingsEmail" disabled style="opacity:0.5;cursor:not-allowed" title="Email cannot be changed">
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace">Email address cannot be changed.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('userSettingsModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-accent" onclick="saveUserSettings()">Save</button>
     </div>
   </div>
 </div>

@@ -658,21 +658,9 @@ header {
 .matrix-container { overflow-x: auto; margin-bottom: 24px; }
 .matrix-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 20px;
   align-items: start;
-}
-/* Narrow: single column */
-@media (max-width: 900px) {
-  .matrix-grid { grid-template-columns: 1fr; }
-}
-/* Medium: 2 columns */
-@media (min-width: 900px) and (max-width: 1400px) {
-  .matrix-grid { grid-template-columns: repeat(2, 1fr); }
-}
-/* Wide: 3 columns (default) */
-@media (min-width: 1400px) {
-  .matrix-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .matrix-table {
   border-collapse: collapse;

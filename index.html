@@ -635,7 +635,7 @@ header {
   color: var(--text-muted);
   margin-bottom: 10px;
 }
-.engineer-main { flex: 1; overflow: auto; padding: 24px; }
+.engineer-main { flex: 1; overflow: auto; padding: 24px; container-type: inline-size; }
 
 .results-title {
   font-family: 'Syne', sans-serif;
@@ -658,10 +658,12 @@ header {
 .matrix-container { overflow-x: auto; margin-bottom: 24px; }
 .matrix-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   align-items: start;
 }
+.matrix-grid[data-cols="2"] { grid-template-columns: repeat(2, 1fr); }
+.matrix-grid[data-cols="1"] { grid-template-columns: 1fr; }
 .matrix-table {
   border-collapse: collapse;
   font-size: 11px;
@@ -2752,6 +2754,25 @@ function renderEngineerView() {
 
   matHtml += `</div>`;
   document.getElementById('engineerMain').innerHTML = matHtml;
+  // Responsive matrix grid — measure first matrix to decide column count
+  requestAnimationFrame(() => {
+    const main = document.getElementById('engineerMain');
+    const grid = main ? main.querySelector('.matrix-grid') : null;
+    if (!grid) return;
+    function updateCols() {
+      const firstMatrix = grid.querySelector('.matrix-container table');
+      const matW = firstMatrix ? firstMatrix.scrollWidth : 300;
+      const available = grid.offsetWidth;
+      // how many matrices fit side by side?
+      const fit = Math.floor(available / (matW + 20));
+      const cols = Math.max(1, Math.min(3, fit));
+      grid.setAttribute('data-cols', cols === 3 ? '' : String(cols));
+    }
+    updateCols();
+    if (window._matrixRO) window._matrixRO.disconnect();
+    window._matrixRO = new ResizeObserver(updateCols);
+    window._matrixRO.observe(grid);
+  });
 }
 
 // ════════════════════════════════════════════════

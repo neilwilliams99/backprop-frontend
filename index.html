@@ -1114,8 +1114,11 @@ header {
             <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">EMAIL</label>
             <input id="authEmail" type="email" placeholder="you@example.com" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none">
           </div>
-          <div>
-            <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;display:block;margin-bottom:4px">PASSWORD</label>
+          <div id="authPasswordField">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+              <label style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace">PASSWORD</label>
+              <a id="forgotLink" href="#" onclick="setAuthMode('reset');return false;" style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;text-decoration:none;display:block">Forgot password?</a>
+            </div>
             <input id="authPassword" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')handleAuth()">
           </div>
           <div id="authError" style="display:none;color:#f05050;font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px"></div>
@@ -1452,17 +1455,34 @@ let authMode = 'signin';
 
 function setAuthMode(mode) {
   authMode = mode;
-  const nameFields = document.getElementById('authNameFields');
-  nameFields.style.display = mode === 'signup' ? 'grid' : 'none';
-  document.getElementById('authFormTitle').textContent = mode === 'signup' ? 'Create Account' : 'Sign In';
-  document.getElementById('authFormSub').textContent   = mode === 'signup' ? 'Start your 7-day free trial.' : 'Welcome back to BackProp.';
-  document.getElementById('tabSignin').style.background = mode === 'signin' ? '#161e2a' : 'transparent';
-  document.getElementById('tabSignin').style.color = mode === 'signin' ? '#dde8f5' : '#7d8590';
-  document.getElementById('tabSignup').style.background = mode === 'signup' ? '#161e2a' : 'transparent';
-  document.getElementById('tabSignup').style.color = mode === 'signup' ? '#dde8f5' : '#7d8590';
-  document.getElementById('authBtn').textContent = mode === 'signin' ? 'Sign In' : 'Create Account';
+  const isReset = mode === 'reset';
+  const isSignup = mode === 'signup';
+  const isSignin = mode === 'signin';
+  document.getElementById('authNameFields').style.display = isSignup ? 'grid' : 'none';
+  document.getElementById('authPasswordField').style.display = isReset ? 'none' : 'block';
+  document.getElementById('forgotLink').style.display = isSignin ? 'block' : 'none';
+  // Tab strip: hide when in reset mode
+  document.querySelector('#tabSignin').closest('div').style.display = isReset ? 'none' : 'flex';
+  document.getElementById('authFormTitle').textContent = isReset ? 'Reset Password' : isSignup ? 'Create Account' : 'Sign In';
+  document.getElementById('authFormSub').textContent   = isReset ? 'Enter your email and we\'ll send a reset link.' : isSignup ? 'Start your 7-day free trial.' : 'Welcome back to BackProp.';
+  document.getElementById('tabSignin').style.background = isSignin ? '#161e2a' : 'transparent';
+  document.getElementById('tabSignin').style.color = isSignin ? '#dde8f5' : '#7d8590';
+  document.getElementById('tabSignup').style.background = isSignup ? '#161e2a' : 'transparent';
+  document.getElementById('tabSignup').style.color = isSignup ? '#dde8f5' : '#7d8590';
+  document.getElementById('authBtn').textContent = isReset ? 'Send Reset Link' : isSignin ? 'Sign In' : 'Create Account';
   document.getElementById('authError').style.display = 'none';
   document.getElementById('authMsg').style.display = 'none';
+  // Back to sign in link
+  let backLink = document.getElementById('resetBackLink');
+  if (isReset && !backLink) {
+    backLink = document.createElement('div');
+    backLink.id = 'resetBackLink';
+    backLink.style.cssText = 'text-align:center;margin-top:12px;font-size:10px;font-family:"DM Mono",monospace;color:#7d8590';
+    backLink.innerHTML = '<a href="#" onclick="setAuthMode(\'signin\');return false;" style="color:#7d8590;text-decoration:none">← Back to sign in</a>';
+    document.getElementById('authBtn').insertAdjacentElement('afterend', backLink);
+  } else if (!isReset && backLink) {
+    backLink.remove();
+  }
 }
 
 async function handleAuth() {
@@ -1472,6 +1492,25 @@ async function handleAuth() {
   const msgEl = document.getElementById('authMsg');
   errEl.style.display = 'none';
   msgEl.style.display = 'none';
+
+  // ── Password reset flow ──
+  if (authMode === 'reset') {
+    if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.style.display = 'block'; return; }
+    document.getElementById('authBtn').textContent = '…';
+    const { error } = await supa.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    document.getElementById('authBtn').textContent = 'Send Reset Link';
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.style.display = 'block';
+    } else {
+      msgEl.textContent = 'Reset link sent — check your email.';
+      msgEl.style.display = 'block';
+    }
+    return;
+  }
+
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
   document.getElementById('authBtn').textContent = '…';
   if (authMode === 'signup') {
@@ -1555,8 +1594,13 @@ initAuth();
 // Handle sign in / sign out events (skip during initial session check)
 supa.auth.onAuthStateChange(async (event, session) => {
   if (_authInitializing) return;
+  if (event === 'PASSWORD_RECOVERY') {
+    // User clicked reset link — show new password form
+    showNewPasswordForm();
+    return;
+  }
   if (event === 'SIGNED_IN' && session && session.user && !currentUser) {
-    if (window.location.hash.includes('access_token')) {
+    if (window.location.hash.includes('access_token') && !window.location.hash.includes('type=recovery')) {
       setTimeout(() => showToast('Email confirmed — welcome to BackProp!', 'success'), 800);
     }
     currentUser = session.user;
@@ -1573,6 +1617,44 @@ supa.auth.onAuthStateChange(async (event, session) => {
     document.getElementById('appShell').style.display = 'none';
   }
 });
+
+function showNewPasswordForm() {
+  // Replace auth form content with new password entry
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('authFormTitle').textContent = 'Set New Password';
+  document.getElementById('authFormSub').textContent = 'Enter your new password below.';
+  document.querySelector('#tabSignin').closest('div').style.display = 'none';
+  document.getElementById('authNameFields').style.display = 'none';
+  document.getElementById('authPasswordField').style.display = 'block';
+  document.getElementById('forgotLink').style.display = 'none';
+  document.querySelector('label[for="authEmail"]') // hide email field
+  document.getElementById('authEmail').closest('div').style.display = 'none';
+  document.getElementById('authBtn').textContent = 'Update Password';
+  document.getElementById('authBtn').onclick = updatePassword;
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('authMsg').style.display = 'none';
+}
+
+async function updatePassword() {
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  const msgEl = document.getElementById('authMsg');
+  if (!password || password.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.';
+    errEl.style.display = 'block'; return;
+  }
+  document.getElementById('authBtn').textContent = '…';
+  const { error } = await supa.auth.updateUser({ password });
+  if (error) {
+    errEl.textContent = error.message;
+    errEl.style.display = 'block';
+    document.getElementById('authBtn').textContent = 'Update Password';
+  } else {
+    msgEl.textContent = 'Password updated! Signing you in…';
+    msgEl.style.display = 'block';
+    // Auth state change will handle redirect to dashboard
+  }
+}
 
 // ════════════════════════════════════════════════
 //  MULTI-PROJECT STATE

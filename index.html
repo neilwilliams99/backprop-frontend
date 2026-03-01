@@ -1559,9 +1559,17 @@ async function signOut() {
 }
 
 let _authInitializing = true;
+let _isPasswordRecovery = false;
 
 // Check session immediately on load — prevents flash of login screen
 async function initAuth() {
+  // Detect password recovery link BEFORE anything else
+  // Supabase puts type=recovery in the URL hash
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    _isPasswordRecovery = true;
+  }
+
   // Handle Stripe redirect back
   const params = new URLSearchParams(window.location.search);
   if (params.get('payment') === 'success') {
@@ -1575,9 +1583,14 @@ async function initAuth() {
     const session = data.session;
     _authInitializing = false;
     document.getElementById('loadingScreen').style.display = 'none';
+    if (_isPasswordRecovery) {
+      // Show reset form regardless of session state
+      showNewPasswordForm();
+      return;
+    }
     if (session && session.user) {
       currentUser = session.user;
-        await dbLoadProjects();
+      await dbLoadProjects();
       await showDashboardWithAccessCheck(currentUser);
     } else {
       document.getElementById('authScreen').style.display = 'flex';
@@ -1595,11 +1608,10 @@ initAuth();
 supa.auth.onAuthStateChange(async (event, session) => {
   if (_authInitializing) return;
   if (event === 'PASSWORD_RECOVERY') {
-    // User clicked reset link — show new password form
     showNewPasswordForm();
     return;
   }
-  if (event === 'SIGNED_IN' && session && session.user && !currentUser) {
+  if (event === 'SIGNED_IN' && session && session.user && !currentUser && !_isPasswordRecovery) {
     if (window.location.hash.includes('access_token') && !window.location.hash.includes('type=recovery')) {
       setTimeout(() => showToast('Email confirmed — welcome to BackProp!', 'success'), 800);
     }
@@ -1609,6 +1621,7 @@ supa.auth.onAuthStateChange(async (event, session) => {
     await dbLoadProjects();
     await showDashboardWithAccessCheck(currentUser);
   } else if (event === 'SIGNED_OUT') {
+    _isPasswordRecovery = false;
     currentUser = null;
     projectStore = [];
     document.getElementById('authScreen').style.display = 'flex';
@@ -1650,9 +1663,19 @@ async function updatePassword() {
     errEl.style.display = 'block';
     document.getElementById('authBtn').textContent = 'Update Password';
   } else {
-    msgEl.textContent = 'Password updated! Signing you in…';
+    _isPasswordRecovery = false;
+    msgEl.textContent = 'Password updated — taking you to the app…';
     msgEl.style.display = 'block';
-    // Auth state change will handle redirect to dashboard
+    // Get current session and go to dashboard
+    setTimeout(async () => {
+      const { data } = await supa.auth.getSession();
+      if (data.session && data.session.user) {
+        currentUser = data.session.user;
+        document.getElementById('authScreen').style.display = 'none';
+        await dbLoadProjects();
+        await showDashboardWithAccessCheck(currentUser);
+      }
+    }, 1200);
   }
 }
 

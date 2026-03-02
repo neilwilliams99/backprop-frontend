@@ -441,7 +441,7 @@ header {
 }
 .zone-levels-table-header {
   display: grid;
-  grid-template-columns: 24px 90px 60px 54px 60px minmax(100px, 1fr);
+  grid-template-columns: 24px 130px 60px 54px 60px 80px;
   gap: 0;
   background: var(--surface3);
   border-bottom: 1px solid var(--border);
@@ -458,7 +458,7 @@ header {
 }
 .zone-level-row {
   display: grid;
-  grid-template-columns: 24px 90px 60px 54px 60px minmax(100px, 1fr);
+  grid-template-columns: 24px 130px 60px 54px 60px 80px;
   gap: 0;
   padding: 2px 8px;
   border-bottom: 1px solid rgba(42,52,71,0.5);
@@ -2710,9 +2710,8 @@ function getPropCap(propId, snapshot) {
 // function focusPropForm() removed - props now in project settings modal
 
 function setCalcMethod(method) {
-  const changed = project.calcMethod !== method;
-  project.calcMethod = method;
-  if (changed) { calcResults = null; updateCalcBtn(); }
+  // Store as pending — applied and dirtied on Save
+  document.getElementById('methodBalancingBtn').dataset.pending = method;
   const balBtn = document.getElementById('methodBalancingBtn');
   const sharBtn = document.getElementById('methodSharingBtn');
   const desc = document.getElementById('methodDescription');
@@ -3081,12 +3080,10 @@ function runCalc() {
                 propSpacing = null;
                 if (!capPass) pourResult.isNP = true;
               } else {
-                // All caps pass — calc prop spacing for load arriving at this level
-                // Props carry the load being passed DOWN from above + addLoad at this level
-                // = totalAtLevel - slabShare (load not absorbed by this slab)
-                const loadPassedDown = totalAtLevel - slabShare;
-                if (loadPassedDown > 0.001) {
-                  const rawSpacing = Math.sqrt(propCapKN / loadPassedDown);
+                // All caps pass — prop spacing = sqrt(propCap / cumulativeLoad at this level)
+                // cumulativeLoad = totalAtLevel = runLoad arriving + addLoad at this level
+                if (totalAtLevel > 0.001) {
+                  const rawSpacing = Math.sqrt(propCapKN / totalAtLevel);
                   propSpacing = Math.min(rawSpacing, maxSp);
                   status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
                   if (propSpacing <= 0) pourResult.isNP = true;
@@ -3623,7 +3620,10 @@ function openProjModal() {
   document.getElementById('concDensity').value = project.concDensity;
   document.getElementById('maxSpacing').value = project.maxSpacing;
   document.getElementById('projModal').classList.add('open');
-  setTimeout(() => setCalcMethod(project.calcMethod || 'balancing'), 0);
+  // Seed pending method and update UI
+  const initMethod = project.calcMethod || 'balancing';
+  document.getElementById('methodBalancingBtn').dataset.pending = initMethod;
+  setTimeout(() => setCalcMethod(initMethod), 0);
 }
 
 function closeProjModal() {
@@ -3636,6 +3636,9 @@ function saveProjSettings() {
   project.prepBy = document.getElementById('prepBy').value;
   project.concDensity = +document.getElementById('concDensity').value;
   project.maxSpacing = +document.getElementById('maxSpacing').value;
+  // Apply pending calcMethod
+  const pendingMethod = document.getElementById('methodBalancingBtn').dataset.pending;
+  if (pendingMethod) project.calcMethod = pendingMethod;
   // Sync sidebar inputs
   if (document.getElementById('engDensity')) document.getElementById('engDensity').value = project.concDensity;
   if (document.getElementById('engSpacing')) document.getElementById('engSpacing').value = project.maxSpacing;

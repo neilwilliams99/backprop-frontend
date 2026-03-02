@@ -441,7 +441,7 @@ header {
 }
 .zone-levels-table-header {
   display: grid;
-  grid-template-columns: 24px 130px 60px 54px 60px 80px;
+  grid-template-columns: 24px 160px 60px 54px 60px minmax(120px,1fr);
   gap: 0;
   background: var(--surface3);
   border-bottom: 1px solid var(--border);
@@ -458,7 +458,7 @@ header {
 }
 .zone-level-row {
   display: grid;
-  grid-template-columns: 24px 130px 60px 54px 60px 80px;
+  grid-template-columns: 24px 160px 60px 54px 60px minmax(120px,1fr);
   gap: 0;
   padding: 2px 8px;
   border-bottom: 1px solid rgba(42,52,71,0.5);
@@ -3636,8 +3636,9 @@ function saveProjSettings() {
   project.prepBy = document.getElementById('prepBy').value;
   project.concDensity = +document.getElementById('concDensity').value;
   project.maxSpacing = +document.getElementById('maxSpacing').value;
-  // Apply pending calcMethod
+  // Apply pending calcMethod — auto-recalc if method changed
   const pendingMethod = document.getElementById('methodBalancingBtn').dataset.pending;
+  const methodChanged = pendingMethod && pendingMethod !== project.calcMethod;
   if (pendingMethod) project.calcMethod = pendingMethod;
   // Sync sidebar inputs
   if (document.getElementById('engDensity')) document.getElementById('engDensity').value = project.concDensity;
@@ -3647,6 +3648,9 @@ function saveProjSettings() {
   calcResults = null;
   markDirty();
   closeProjModal();
+  if (methodChanged && levels.some(l => !isBaseLevel(l) && l.zones.length > 0)) {
+    setTimeout(() => runCalc(), 100);
+  }
   // Refresh zone dropdowns in case props changed
   if (currentZoneLevelId) {
     const lev = levels.find(l => l.id === currentZoneLevelId);

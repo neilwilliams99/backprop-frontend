@@ -441,7 +441,7 @@ header {
 }
 .zone-levels-table-header {
   display: grid;
-  grid-template-columns: 24px 54px 60px 54px 60px minmax(150px, 1fr);
+  grid-template-columns: 24px 90px 60px 54px 60px minmax(100px, 1fr);
   gap: 0;
   background: var(--surface3);
   border-bottom: 1px solid var(--border);
@@ -458,7 +458,7 @@ header {
 }
 .zone-level-row {
   display: grid;
-  grid-template-columns: 24px 54px 60px 54px 60px minmax(150px, 1fr);
+  grid-template-columns: 24px 90px 60px 54px 60px minmax(100px, 1fr);
   gap: 0;
   padding: 2px 8px;
   border-bottom: 1px solid rgba(42,52,71,0.5);
@@ -1375,7 +1375,7 @@ header {
           Load Sharing
         </button>
       </div>
-      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border)">
+      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border);min-height:48px;display:flex;align-items:center">
         Load is distributed across slabs based on individual slab capacities. Traditional method.
       </div>
     </div>
@@ -2265,7 +2265,7 @@ function nextZoneName(lev) {
 
 function makeDefaultZone(lev, levelIdx) {
   // Build levelsBelow array: levels below this one in reverse (nearest first)
-  const DEFAULT_PCTS = [60, 35, 15]; // top 3 active levels
+  const DEFAULT_PCTS = [40, 35, 25]; // top 3 active levels
   const below = [];
   for (let j = levelIdx - 1; j >= 0; j--) {
     const depthBelow = levelIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
@@ -2469,12 +2469,17 @@ function renderZones(lev) {
       let propCapVal = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
 
       const isSharing = (project.calcMethod === 'sharing');
+      // T/G: check if the lowest active entry is the base level
+      const activeBl_list = zone.levelsBelow.filter(b => b.active);
+      const isTG_zone = activeBl_list.length > 0 && isBaseLevel(levels.find(l => l.id === activeBl_list[activeBl_list.length - 1].levelId));
       const col3 = isSharing
         ? (isGnd
           ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">0%</div>`
-          : `<input class="zone-lvl-input" type="number" value="${bl.distPct ?? 0}" step="1" min="0" max="100" ${disabledAttr}
-              title="% of total load this slab carries"
-              onchange="setZoneLevelField('${lev.id}',${zi},${bli},'distPct',+this.value);updateDistPctSum('${lev.id}',${zi})" style="font-weight:700;color:var(--accent2)">`)
+          : isTG_zone
+            ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">0%</div>`
+            : `<input class="zone-lvl-input" type="number" value="${bl.distPct ?? 0}" step="1" min="0" max="100" ${disabledAttr}
+                title="% of total load this slab carries"
+                onchange="setZoneLevelField('${lev.id}',${zi},${bli},'distPct',+this.value);updateDistPctSum('${lev.id}',${zi})" style="font-weight:700;color:var(--accent2)">`)
         : (isGnd
           ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">—</div>`
           : `<input class="zone-lvl-input" type="number" value="${(bl.sm ?? 1.00).toFixed(2)}" step="0.05" min="0.1" max="1.0" ${disabledAttr}
@@ -2507,12 +2512,14 @@ function renderZones(lev) {
     // Calculate % sum for Load Sharing validation display
     const isSharing = (project.calcMethod === 'sharing');
     const activeBls = zone.levelsBelow.filter(b => b.active);
-    const pctSum = isSharing ? activeBls.reduce((s, b) => {
+    // T/G: lowest active entry is base level
+    const isTGZone = activeBls.length > 0 && isBaseLevel(levels.find(l => l.id === activeBls[activeBls.length - 1].levelId));
+    const pctSum = isSharing && !isTGZone ? activeBls.reduce((s, b) => {
       const bl = levels.find(l => l.id === b.levelId);
       return isBaseLevel(bl) ? s : s + (b.distPct ?? 0);
     }, 0) : 100;
-    const pctOk = Math.abs(pctSum - 100) < 0.01;
-    const pctSumWarning = isSharing ? `<div id="pctWarn_${lev.id}_${zi}" style="margin-top:6px;padding:6px 10px;border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;${pctOk ? 'color:var(--tg);background:rgba(56,201,110,0.08);border:1px solid rgba(56,201,110,0.2)' : 'color:var(--np);background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2)'}">
+    const pctOk = isTGZone || Math.abs(pctSum - 100) < 0.01;
+    const pctSumWarning = (isSharing && !isTGZone) ? `<div id="pctWarn_${lev.id}_${zi}" style="margin-top:6px;padding:6px 10px;border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;${pctOk ? 'color:var(--tg);background:rgba(56,201,110,0.08);border:1px solid rgba(56,201,110,0.2)' : 'color:var(--np);background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2)'}">
       Σ distribution = ${pctSum.toFixed(0)}% ${pctOk ? '✓' : '— must equal 100%'}
     </div>` : '';
 
@@ -2584,7 +2591,7 @@ function addZone() {
     addLoad: 3.0,
     levelsBelow: [],
   };
-  const DEFAULT_PCTS2 = [60, 35, 15];
+  const DEFAULT_PCTS2 = [40, 35, 25];
   for (let j = levIdx - 1; j >= 0; j--) {
     const depthBelow = levIdx - 1 - j;
     const isActive = (levIdx - j) <= 3;
@@ -2655,6 +2662,9 @@ function updateDistPctSum(levId, zi) {
   if (!lev) return;
   const zone = lev.zones[zi];
   const activeBls = zone.levelsBelow.filter(b => b.active);
+  // Suppress warning if T/G
+  const isTG = activeBls.length > 0 && isBaseLevel(levels.find(l => l.id === activeBls[activeBls.length - 1].levelId));
+  if (isTG) { markDirty(); return; }
   const pctSum = activeBls.reduce((s, b) => {
     const bl = levels.find(l => l.id === b.levelId);
     return isBaseLevel(bl) ? s : s + (b.distPct ?? 0);
@@ -2700,7 +2710,9 @@ function getPropCap(propId, snapshot) {
 // function focusPropForm() removed - props now in project settings modal
 
 function setCalcMethod(method) {
+  const changed = project.calcMethod !== method;
   project.calcMethod = method;
+  if (changed) { calcResults = null; updateCalcBtn(); }
   const balBtn = document.getElementById('methodBalancingBtn');
   const sharBtn = document.getElementById('methodSharingBtn');
   const desc = document.getElementById('methodDescription');
@@ -2917,7 +2929,10 @@ function runCalc() {
           const bl = levels.find(l => l.id === b.levelId);
           return bl && isBaseLevel(bl);
         });
-        if (reachesGround) return; // T/G — skip % check
+        // T/G: lowest active entry is base level — skip % check
+        const activeEnt = zone.levelsBelow.filter(b => b.active);
+        const lowestIsGnd = activeEnt.length > 0 && isBaseLevel(levels.find(l => l.id === activeEnt[activeEnt.length-1].levelId));
+        if (reachesGround && lowestIsGnd) return; // T/G — skip % check
         const nonGnd = activeEntries.filter(b => {
           const bl = levels.find(l => l.id === b.levelId);
           return bl && !isBaseLevel(bl);
@@ -3066,11 +3081,12 @@ function runCalc() {
                 propSpacing = null;
                 if (!capPass) pourResult.isNP = true;
               } else {
-                // All caps pass — calc prop spacing for load being passed down
-                // Props at this level carry the load being passed down = totalAtLevel - slabShare
-                const loadForProps = isGndLevel ? totalAtLevel : (totalAtLevel - slabShare);
-                if (loadForProps > 0.001) {
-                  const rawSpacing = Math.sqrt(propCapKN / loadForProps);
+                // All caps pass — calc prop spacing for load arriving at this level
+                // Props carry the load being passed DOWN from above + addLoad at this level
+                // = totalAtLevel - slabShare (load not absorbed by this slab)
+                const loadPassedDown = totalAtLevel - slabShare;
+                if (loadPassedDown > 0.001) {
+                  const rawSpacing = Math.sqrt(propCapKN / loadPassedDown);
                   propSpacing = Math.min(rawSpacing, maxSp);
                   status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
                   if (propSpacing <= 0) pourResult.isNP = true;

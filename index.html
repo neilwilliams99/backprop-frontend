@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BackProp — Slab Back-Propping Design Tool | IKB Engineering</title>
- 
+
 <!-- SEO Meta Tags -->
 <meta name="description" content="BackProp is a professional web-based slab back-propping design tool for structural and temporary works engineers. Calculate prop spacings, design multi-level back-propping arrangements, and generate construction documentation. Built for engineers by engineers.">
 <meta name="keywords" content="slab back-propping, back propping design, temporary works, prop spacing calculator, formwork design, AS 3610, structural engineering tool, concrete construction, back-prop calculation, temporary works engineer">
@@ -1254,6 +1254,83 @@ header {
 <!-- ══ IMPORT MODAL ══ -->
 
 
+
+<!-- ══ NEW PROJECT MODAL ══ -->
+<div class="modal-overlay" id="newProjModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">New Project</div>
+    <div class="modal-sub">Enter project details to get started.</div>
+
+    <!-- Project details -->
+    <div class="proj-modal-grid" style="margin-bottom:14px">
+      <div class="field-group" style="grid-column:1/-1">
+        <label class="field-label">Project Name</label>
+        <input class="field-input" id="npName" placeholder="e.g. 123 Smith Street">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Number (optional)</label>
+        <input class="field-input" id="npJobNo" placeholder="e.g. 10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Prepared By (optional)</label>
+        <input class="field-input" id="npPrepBy" placeholder="e.g. NW">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Calculation method -->
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="npMethodBalancingBtn" onclick="setNpMethod('balancing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Balancing
+        </button>
+        <button id="npMethodSharingBtn" onclick="setNpMethod('sharing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Sharing
+        </button>
+      </div>
+      <div id="npMethodDesc" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border)">
+        Load is distributed across slabs based on individual slab capacities. Traditional method.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Optional prop -->
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:6px">Prop Library</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:10px">Add your first prop now, or add props later via Project Settings.</div>
+    <div id="npPropFormWrap" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
+      <div class="proj-modal-grid">
+        <div class="field-group">
+          <label class="field-label">Type / Model</label>
+          <input class="field-input" id="npPropType" placeholder="e.g. Acrow #2">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Extension</label>
+          <input class="field-input" id="npPropExtension" placeholder="e.g. 2.0–3.4m">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacity (kN)</label>
+          <input class="field-input" type="number" id="npPropCapacity" placeholder="e.g. 22" step="0.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes (optional)</label>
+          <input class="field-input" id="npPropNotes" placeholder="Manufacturer, load case…">
+        </div>
+      </div>
+    </div>
+    <button id="npPropToggleBtn" class="btn btn-ghost" style="width:100%;margin-bottom:14px;font-size:11px" onclick="toggleNpPropForm()">+ Add a Prop</button>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeNewProjModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="submitNewProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ PROJECT SETTINGS MODAL ══ -->
 <div class="modal-overlay" id="projModal">
   <div class="modal">
@@ -1283,6 +1360,23 @@ header {
       <div class="field-group">
         <label class="field-label">Max prop spacing (m)</label>
         <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="methodBalancingBtn" onclick="setCalcMethod('balancing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Balancing
+        </button>
+        <button id="methodSharingBtn" onclick="setCalcMethod('sharing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Sharing
+        </button>
+      </div>
+      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border)">
+        Load is distributed across slabs based on individual slab capacities. Traditional method.
       </div>
     </div>
     <div class="divider"></div>
@@ -1419,7 +1513,8 @@ header {
         <div class="e-sidebar-section">
           <div class="e-sidebar-title">Project</div>
           <div style="font-size:12px;font-weight:500" id="engProjName">Project 10354</div>
-          <div style="font-size:10px;color:var(--text-muted)" id="engJobNo">Job No. 10354</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px" id="engJobNo">Job No. 10354</div>
+          <span id="engMethodBadge" style="font-size:10px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:8px;border:1px solid rgba(232,160,32,0.25);background:rgba(232,160,32,0.1);color:var(--accent)">Load Balancing</span>
         </div>
         <div class="e-sidebar-section">
           <div class="e-sidebar-title">Parameters</div>
@@ -1553,7 +1648,9 @@ async function handleAuth() {
   }
 
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
-  document.getElementById('authBtn').textContent = '…';
+  const authBtn = document.getElementById('authBtn');
+  authBtn.textContent = '…';
+  authBtn.disabled = true;
   if (authMode === 'signup') {
     if (!document.getElementById('authTermsCheck').checked) {
       errEl.textContent = 'Please agree to the Terms & Conditions, Privacy Policy and Disclaimer.';
@@ -1567,33 +1664,51 @@ async function handleAuth() {
     if (error) {
       errEl.textContent = error.message;
       errEl.style.display = 'block';
+      authBtn.textContent = 'Create Account';
+      authBtn.disabled = false;
     } else if (data.user && data.user.identities && data.user.identities.length === 0) {
       // Supabase returns a fake success when email already exists — detect by empty identities
       errEl.textContent = 'An account with this email already exists. Please sign in instead.';
       errEl.style.display = 'block';
-      // Switch to sign in tab after a moment
-      setTimeout(() => setAuthMode('signin'), 1500);
+      document.getElementById('authBtn').textContent = 'Create Account';
+      // Switch to sign in after 4 seconds, keep message visible
+      authBtn.disabled = false;
+      setTimeout(() => {
+        setAuthMode('signin');
+        errEl.textContent = 'An account with this email already exists. Please sign in instead.';
+        errEl.style.display = 'block';
+      }, 4000);
+      return;
     } else {
-      msgEl.textContent = 'Account created! Check your email to confirm, then sign in.';
-      msgEl.style.display = 'block';
-      // Clear form and reset to sign in mode
+      // Reset button first
+      authBtn.textContent = 'Create Account';
+      authBtn.disabled = false;
+      // Clear all fields
       document.getElementById('authEmail').value = '';
       document.getElementById('authPassword').value = '';
       document.getElementById('authFirstName').value = '';
       document.getElementById('authLastName').value = '';
       document.getElementById('authTermsCheck').checked = false;
-      setTimeout(() => setAuthMode('signin'), 2000);
+      // Switch to signin tab
+      setAuthMode('signin');
+      // Show success message after mode switch (setAuthMode hides msgEl so set after)
+      setTimeout(() => {
+        msgEl.textContent = '✓ Account created! Check your email (including spam) to confirm, then sign in.';
+        msgEl.style.display = 'block';
+      }, 50);
+      return;
     }
   } else {
     const { error } = await supa.auth.signInWithPassword({ email, password });
     if (error) {
-      // Make the error message more user-friendly
       if (error.message.includes('Invalid login credentials')) {
         errEl.textContent = 'Incorrect email or password.';
       } else {
         errEl.textContent = error.message;
       }
       errEl.style.display = 'block';
+      authBtn.textContent = 'Sign In';
+      authBtn.disabled = false;
     }
   }
   document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
@@ -1851,7 +1966,7 @@ function makeNewProjectData(name, jobNo) {
   const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
   return {
     id,
-    project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0, props: [] },
+    project: { name: name || 'New Project', jobNo: jobNo || '', prepBy: '', concDensity: 24, maxSpacing: 3.0, props: [], calcMethod: 'balancing' },
     // Always seed with base level at index 0 — infinite capacity, not deletable
     levels: [
       { id: 'base_' + id, name: 'Ground', thickness: 0, slabCap: 100000, addLoad: 0, zones: [], isBase: true }
@@ -1907,7 +2022,7 @@ async function dbLoadProjects() {
   projectStore = (data || []).map(row => ({
     id:          row.id,
     _supaId:     row.id,
-    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', concDensity: 24, maxSpacing: 3.0, props: [], ...(row.data.project || {}) },
+    project:     { name: row.name, jobNo: row.job_no || '', prepBy: row.prep_by || '', concDensity: 24, maxSpacing: 3.0, props: [], calcMethod: 'balancing', ...(row.data.project || {}) },
     levels:      row.data.levels      || [],
     calcResults: row.data.calcResults || null,
   }));
@@ -1948,20 +2063,94 @@ async function createProject() {
     showPaywall('trial_limit');
     return;
   }
-  const result = await dlgPrompt(
-    'New Project',
-    'Enter project details to get started.',
-    'Project name…',
-    'Project ' + (projectStore.length + 1),
-    'Job number (optional)',
-    'e.g. 10354',
-    '',
-    'Create Project'
-  );
-  if (!result) return;
-  const name  = result.v1.trim() || ('Project ' + (projectStore.length + 1));
-  const jobNo = result.v2.trim();
+  openNewProjModal();
+}
+
+let _newProjMethod = 'balancing';
+let _newProjPropVisible = false;
+
+function openNewProjModal() {
+  _newProjMethod = 'balancing';
+  _newProjPropVisible = false;
+  const n = projectStore.length + 1;
+  document.getElementById('npName').value = 'Project ' + n;
+  document.getElementById('npJobNo').value = '';
+  document.getElementById('npPrepBy').value = '';
+  document.getElementById('npPropType').value = '';
+  document.getElementById('npPropExtension').value = '';
+  document.getElementById('npPropCapacity').value = '';
+  document.getElementById('npPropNotes').value = '';
+  document.getElementById('npPropFormWrap').style.display = 'none';
+  document.getElementById('npPropToggleBtn').textContent = '+ Add a Prop';
+  setNpMethod('balancing');
+  document.getElementById('newProjModal').classList.add('open');
+  setTimeout(() => document.getElementById('npName').focus(), 50);
+}
+
+function closeNewProjModal() {
+  document.getElementById('newProjModal').classList.remove('open');
+}
+
+function setNpMethod(method) {
+  _newProjMethod = method;
+  const balBtn = document.getElementById('npMethodBalancingBtn');
+  const sharBtn = document.getElementById('npMethodSharingBtn');
+  const desc = document.getElementById('npMethodDesc');
+  if (method === 'balancing') {
+    balBtn.style.border = '2px solid var(--accent)';
+    balBtn.style.background = 'rgba(232,160,32,0.1)';
+    balBtn.style.color = 'var(--accent)';
+    sharBtn.style.border = '2px solid var(--border)';
+    sharBtn.style.background = 'transparent';
+    sharBtn.style.color = 'var(--text-muted)';
+    desc.textContent = 'Load is distributed across slabs based on individual slab capacities. Traditional method.';
+  } else {
+    sharBtn.style.border = '2px solid var(--accent2)';
+    sharBtn.style.background = 'rgba(77,168,255,0.1)';
+    sharBtn.style.color = 'var(--accent2)';
+    balBtn.style.border = '2px solid var(--border)';
+    balBtn.style.background = 'transparent';
+    balBtn.style.color = 'var(--text-muted)';
+    desc.textContent = 'Load is distributed based on nominated % share at each slab level. Reflects relative stiffness. Set % distribution in each zone.';
+  }
+}
+
+function toggleNpPropForm() {
+  _newProjPropVisible = !_newProjPropVisible;
+  document.getElementById('npPropFormWrap').style.display = _newProjPropVisible ? 'block' : 'none';
+  document.getElementById('npPropToggleBtn').textContent = _newProjPropVisible ? '− Remove Prop' : '+ Add a Prop';
+}
+
+async function submitNewProject() {
+  const name  = document.getElementById('npName').value.trim() || ('Project ' + (projectStore.length + 1));
+  const jobNo = document.getElementById('npJobNo').value.trim();
+  const prepBy = document.getElementById('npPrepBy').value.trim();
+
   const p = makeNewProjectData(name, jobNo);
+  p.project.prepBy = prepBy;
+  p.project.calcMethod = _newProjMethod;
+
+  // Optional prop
+  if (_newProjPropVisible) {
+    const propType = document.getElementById('npPropType').value.trim();
+    const propCap  = parseFloat(document.getElementById('npPropCapacity').value);
+    if (propType && !isNaN(propCap) && propCap > 0) {
+      const newProp = {
+        id: 'p_' + uid(),
+        type: propType,
+        extension: document.getElementById('npPropExtension').value.trim(),
+        capacity: propCap,
+        notes: document.getElementById('npPropNotes').value.trim(),
+        isDefault: true,
+      };
+      p.project.props = [newProp];
+    } else if (propType || document.getElementById('npPropCapacity').value) {
+      showToast('Prop not saved — enter both type and a valid capacity, or remove the prop section.', 'error');
+      return;
+    }
+  }
+
+  closeNewProjModal();
   p._supaId = null;
   projectStore.unshift(p);
   await dbSaveProject(p);
@@ -2055,6 +2244,7 @@ function makeBlEntry(levelId, active, slabCap, addLoad) {
     slabCap,
     addLoad,
     sm: 1.0,
+    distPct: 0,   // % load share (Load Sharing method)
     propId,
     propSnapshot: libProp ? { type: libProp.type, capacity: libProp.capacity } : null,
     propCapOverride: null,
@@ -2075,15 +2265,19 @@ function nextZoneName(lev) {
 
 function makeDefaultZone(lev, levelIdx) {
   // Build levelsBelow array: levels below this one in reverse (nearest first)
+  const DEFAULT_PCTS = [60, 35, 15]; // top 3 active levels
   const below = [];
   for (let j = levelIdx - 1; j >= 0; j--) {
     const depthBelow = levelIdx - 1 - j; // 0 = immediately below, 1 = two levels down, etc.
-    below.push(makeBlEntry(
+    const isActive = (levelIdx - j) <= 3;
+    const bl = makeBlEntry(
       levels[j].id,
-      (levelIdx - j) <= 3,
+      isActive,
       levels[j].slabCap,
       depthBelow === 0 ? 0.3 : 0.1
-    ));
+    );
+    bl.distPct = isActive && depthBelow < DEFAULT_PCTS.length ? DEFAULT_PCTS[depthBelow] : 0;
+    below.push(bl);
   }
   return {
     id: 'z_' + lev.id + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
@@ -2274,6 +2468,19 @@ function renderZones(lev) {
       // Prop capacity display
       let propCapVal = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
 
+      const isSharing = (project.calcMethod === 'sharing');
+      const col3 = isSharing
+        ? (isGnd
+          ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">0%</div>`
+          : `<input class="zone-lvl-input" type="number" value="${bl.distPct ?? 0}" step="1" min="0" max="100" ${disabledAttr}
+              title="% of total load this slab carries"
+              onchange="setZoneLevelField('${lev.id}',${zi},${bli},'distPct',+this.value);updateDistPctSum('${lev.id}',${zi})" style="font-weight:700;color:var(--accent2)">`)
+        : (isGnd
+          ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">—</div>`
+          : `<input class="zone-lvl-input" type="number" value="${(bl.sm ?? 1.00).toFixed(2)}" step="0.05" min="0.1" max="1.0" ${disabledAttr}
+              title="Slab stiffness modifier (multiplies slab capacity)"
+              onchange="setZoneLevelField('${lev.id}',${zi},${bli},'sm',+this.value)">`);
+
       levBelowRows += `
         <div class="zone-level-row ${bl.active ? 'checked' : 'disabled'}">
           <input type="checkbox" class="zone-check" ${bl.active ? 'checked' : ''}
@@ -2284,11 +2491,7 @@ function renderZones(lev) {
             : `<input class="zone-lvl-input" type="number" value="${bl.slabCap}" step="0.5" ${disabledAttr}
                 title="Slab capacity (kPa)"
                 onchange="setZoneLevelField('${lev.id}',${zi},${bli},'slabCap',+this.value)">`}
-          ${isGnd
-            ? `<div class="zone-lvl-input" style="opacity:0.3;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted)">—</div>`
-            : `<input class="zone-lvl-input" type="number" value="${(bl.sm ?? 1.00).toFixed(2)}" step="0.05" min="0.1" max="1.0" ${disabledAttr}
-                title="Slab stiffness modifier (multiplies slab capacity)"
-                onchange="setZoneLevelField('${lev.id}',${zi},${bli},'sm',+this.value)">`}
+          ${col3}
           <input class="zone-lvl-input" type="number" value="${bl.addLoad}" step="0.5" ${disabledAttr}
             title="Additional construction load (kPa)"
             onchange="setZoneLevelField('${lev.id}',${zi},${bli},'addLoad',+this.value)">
@@ -2300,6 +2503,18 @@ function renderZones(lev) {
         </div>
       `;
     });
+
+    // Calculate % sum for Load Sharing validation display
+    const isSharing = (project.calcMethod === 'sharing');
+    const activeBls = zone.levelsBelow.filter(b => b.active);
+    const pctSum = isSharing ? activeBls.reduce((s, b) => {
+      const bl = levels.find(l => l.id === b.levelId);
+      return isBaseLevel(bl) ? s : s + (b.distPct ?? 0);
+    }, 0) : 100;
+    const pctOk = Math.abs(pctSum - 100) < 0.01;
+    const pctSumWarning = isSharing ? `<div id="pctWarn_${lev.id}_${zi}" style="margin-top:6px;padding:6px 10px;border-radius:5px;font-size:10px;font-family:'DM Mono',monospace;${pctOk ? 'color:var(--tg);background:rgba(56,201,110,0.08);border:1px solid rgba(56,201,110,0.2)' : 'color:var(--np);background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2)'}">
+      Σ distribution = ${pctSum.toFixed(0)}% ${pctOk ? '✓' : '— must equal 100%'}
+    </div>` : '';
 
     card.innerHTML = `
       <div class="zone-card-header">
@@ -2339,11 +2554,12 @@ function renderZones(lev) {
               <div class="zone-col-head"></div>
               <div class="zone-col-head">Level</div>
               <div class="zone-col-head">Slab Cap<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
-              <div class="zone-col-head">SM<br><span style="font-weight:400;text-transform:none;font-size:8px">×</span></div>
+              <div class="zone-col-head" id="zoneColHead3_${lev.id}_${zi}">${isSharing ? 'Dist %<br><span style=\"font-weight:400;text-transform:none;font-size:8px\">%</span>' : 'SM<br><span style=\"font-weight:400;text-transform:none;font-size:8px\">×</span>'}</div>
               <div class="zone-col-head">Add Load<br><span style="font-weight:400;text-transform:none;font-size:8px">kPa</span></div>
               <div class="zone-col-head">Prop Selection</div>
             </div>
             ${zone.levelsBelow.length > 0 ? levBelowRows : '<div style="padding:12px;font-size:11px;color:var(--text-muted);text-align:center">No levels below this one</div>'}
+            ${isSharing ? pctSumWarning : ''}
           </div>
         </div>
       </div>
@@ -2368,14 +2584,18 @@ function addZone() {
     addLoad: 3.0,
     levelsBelow: [],
   };
+  const DEFAULT_PCTS2 = [60, 35, 15];
   for (let j = levIdx - 1; j >= 0; j--) {
     const depthBelow = levIdx - 1 - j;
-    newZone.levelsBelow.push(makeBlEntry(
+    const isActive = (levIdx - j) <= 3;
+    const bl = makeBlEntry(
       levels[j].id,
-      (levIdx - j) <= 3,
+      isActive,
       levels[j].slabCap,
       depthBelow === 0 ? 0.3 : 0.1
-    ));
+    );
+    bl.distPct = isActive && depthBelow < DEFAULT_PCTS2.length ? DEFAULT_PCTS2[depthBelow] : 0;
+    newZone.levelsBelow.push(bl);
   }
   lev.zones.push(newZone);
   renderZones(lev);
@@ -2430,6 +2650,26 @@ function setZoneLevelField(levId, zi, bli, field, val) {
   markDirty();
 }
 
+function updateDistPctSum(levId, zi) {
+  const lev = levels.find(l => l.id === levId);
+  if (!lev) return;
+  const zone = lev.zones[zi];
+  const activeBls = zone.levelsBelow.filter(b => b.active);
+  const pctSum = activeBls.reduce((s, b) => {
+    const bl = levels.find(l => l.id === b.levelId);
+    return isBaseLevel(bl) ? s : s + (b.distPct ?? 0);
+  }, 0);
+  const pctOk = Math.abs(pctSum - 100) < 0.01;
+  const warnEl = document.getElementById(`pctWarn_${levId}_${zi}`);
+  if (warnEl) {
+    warnEl.textContent = `Σ distribution = ${pctSum.toFixed(0)}% ${pctOk ? '✓' : '— must equal 100%'}`;
+    warnEl.style.color = pctOk ? 'var(--tg)' : 'var(--np)';
+    warnEl.style.background = pctOk ? 'rgba(56,201,110,0.08)' : 'rgba(240,80,80,0.08)';
+    warnEl.style.border = pctOk ? '1px solid rgba(56,201,110,0.2)' : '1px solid rgba(240,80,80,0.2)';
+  }
+  markDirty();
+}
+
 function setZoneProp(levId, zi, bli, propId) {
   const lev = levels.find(l => l.id === levId);
   if (!lev) return;
@@ -2458,6 +2698,31 @@ function getPropCap(propId, snapshot) {
 // function renderProps() removed - props now in project settings modal
 
 // function focusPropForm() removed - props now in project settings modal
+
+function setCalcMethod(method) {
+  project.calcMethod = method;
+  const balBtn = document.getElementById('methodBalancingBtn');
+  const sharBtn = document.getElementById('methodSharingBtn');
+  const desc = document.getElementById('methodDescription');
+  if (!balBtn || !sharBtn || !desc) return;
+  if (method === 'balancing') {
+    balBtn.style.border = '2px solid var(--accent)';
+    balBtn.style.background = 'rgba(232,160,32,0.1)';
+    balBtn.style.color = 'var(--accent)';
+    sharBtn.style.border = '2px solid var(--border)';
+    sharBtn.style.background = 'transparent';
+    sharBtn.style.color = 'var(--text-muted)';
+    desc.textContent = 'Load is distributed across slabs based on individual slab capacities. Traditional method.';
+  } else {
+    sharBtn.style.border = '2px solid var(--accent2)';
+    sharBtn.style.background = 'rgba(196,125,255,0.1)';
+    sharBtn.style.color = 'var(--accent2)';
+    balBtn.style.border = '2px solid var(--border)';
+    balBtn.style.background = 'transparent';
+    balBtn.style.color = 'var(--text-muted)';
+    desc.textContent = 'Load is distributed based on nominated % share at each slab level. Reflects relative stiffness. Set % distribution in each zone.';
+  }
+}
 
 function saveProp() { saveModalProp(); } // delegates to modal version
 
@@ -2640,6 +2905,34 @@ function runCalc() {
     showToast('Cannot calculate — no zones defined. Add zones to at least one level first.', 'error');
     return;
   }
+
+  // Check 4: Load Sharing — validate % sums for all non-TG zones
+  if (project.calcMethod === 'sharing') {
+    const badZones = [];
+    levels.forEach(lev => {
+      if (isBaseLevel(lev)) return;
+      lev.zones.forEach(zone => {
+        const activeEntries = zone.levelsBelow.filter(b => b.active);
+        const reachesGround = activeEntries.some(b => {
+          const bl = levels.find(l => l.id === b.levelId);
+          return bl && isBaseLevel(bl);
+        });
+        if (reachesGround) return; // T/G — skip % check
+        const nonGnd = activeEntries.filter(b => {
+          const bl = levels.find(l => l.id === b.levelId);
+          return bl && !isBaseLevel(bl);
+        });
+        const pctSum = nonGnd.reduce((s, b) => s + (b.distPct ?? 0), 0);
+        if (Math.abs(pctSum - 100) > 0.5) {
+          badZones.push(`${lev.name} · ${zone.name} (${pctSum.toFixed(0)}%)`);
+        }
+      });
+    });
+    if (badZones.length > 0) {
+      showToast(`Cannot calculate — distribution % must sum to 100% in: ${badZones.join(', ')}. Open each zone and correct the values.`, 'error');
+      return;
+    }
+  }
   // ── END PRE-FLIGHT ───────────────────────────────────────────────────────
 
   // For each level (non-ground), for each zone
@@ -2688,10 +2981,120 @@ function runCalc() {
       // ─────────────────────────────────────────────────────────────────────
 
       const activeBelowEntries = zone.levelsBelow.filter(b => b.active);
+      const useSharing = (project.calcMethod === 'sharing');
 
       if (activeBelowEntries.length === 0) {
         pourResult.isNP = true;
         pourResult.failReason = 'No load-bearing levels selected.';
+      } else if (useSharing) {
+        // ── CASE C: LOAD SHARING ─────────────────────────────────────────
+        // Each slab attracts its nominated % of the running load+addLoad.
+        // Props at each level are sized for the load passed DOWN.
+        // All slab capacity checks must pass before any spacings are shown.
+
+        const reachesGround = activeBelowEntries.some(b => {
+          const bl = levels.find(l => l.id === b.levelId);
+          return bl && isBaseLevel(bl);
+        });
+
+        if (reachesGround) {
+          pourResult.isTG = true;
+          // T/G in load sharing: distribution boxes are 0%, all load to ground
+          // Props at every level carry the full running load
+          activeBelowEntries.forEach(bl => {
+            const blev = levels.find(l => l.id === bl.levelId);
+            if (!blev) return;
+            const isGndLevel = isBaseLevel(blev);
+            const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
+            if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}.`; return; }
+            const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
+            const cappedSpacing = Math.min(propSpacing, maxSp);
+            const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
+            if (status === 'Fail') pourResult.isNP = true;
+            pourResult.levels.push({
+              name: blev.name, isGround: isGndLevel,
+              cumulativeLoad: totalWetLoad,
+              capacity: isGndLevel ? null : bl.slabCap,
+              distPct: 0, slabShare: 0,
+              propCap: propCapKN,
+              netLoad: isGndLevel ? 0 : totalWetLoad,
+              status, propSpacing: cappedSpacing > 0 ? cappedSpacing : null,
+              propId: bl.propId,
+            });
+          });
+        } else {
+          // Validate % sum = 100 for non-ground entries
+          const nonGndEntries = activeBelowEntries.filter(b => {
+            const bl = levels.find(l => l.id === b.levelId);
+            return bl && !isBaseLevel(bl);
+          });
+          const pctSum = nonGndEntries.reduce((s, b) => s + (b.distPct ?? 0), 0);
+          if (Math.abs(pctSum - 100) > 0.5) {
+            pourResult.isNP = true;
+            pourResult.failReason = `Load sharing % must sum to 100% (currently ${pctSum.toFixed(0)}%). Edit zone distribution values.`;
+          } else {
+            // Pass 1: check all slab capacities
+            let runLoad = totalWetLoad;
+            const levelChecks = [];
+            let allPass = true;
+
+            activeBelowEntries.forEach(bl => {
+              const blev = levels.find(l => l.id === bl.levelId);
+              if (!blev) return;
+              const levelAddLoad = bl.addLoad ?? 0;
+              const totalAtLevel = runLoad + levelAddLoad;
+              const pct = (bl.distPct ?? 0) / 100;
+              const slabShare = totalAtLevel * pct;
+              const capPass = isBaseLevel(blev) || bl.slabCap >= slabShare;
+              if (!capPass) allPass = false;
+              levelChecks.push({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn: runLoad });
+              runLoad = totalAtLevel - slabShare;
+            });
+
+            // Pass 2: if all slabs pass, calc prop spacings; otherwise all fail
+            levelChecks.forEach(({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn }) => {
+              const isGndLevel = isBaseLevel(blev);
+              const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
+              if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}.`; return; }
+
+              let propSpacing = null;
+              let status = '';
+
+              if (!allPass) {
+                // Any slab failed — no spacings
+                status = capPass ? 'Cap OK' : 'Fail';
+                propSpacing = null;
+                if (!capPass) pourResult.isNP = true;
+              } else {
+                // All caps pass — calc prop spacing for load being passed down
+                // Props at this level carry the load being passed down = totalAtLevel - slabShare
+                const loadForProps = isGndLevel ? totalAtLevel : (totalAtLevel - slabShare);
+                if (loadForProps > 0.001) {
+                  const rawSpacing = Math.sqrt(propCapKN / loadForProps);
+                  propSpacing = Math.min(rawSpacing, maxSp);
+                  status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
+                  if (propSpacing <= 0) pourResult.isNP = true;
+                } else {
+                  status = 'no load';
+                }
+              }
+
+              pourResult.levels.push({
+                name: blev.name, isGround: isGndLevel,
+                cumulativeLoad: runLoadIn,
+                capacity: isGndLevel ? null : bl.slabCap,
+                distPct: Math.round((pct * 100) * 100) / 100,
+                slabShare: Math.round(slabShare * 100) / 100,
+                propCap: propCapKN,
+                netLoad: Math.max(0, totalAtLevel - slabShare),
+                status, propSpacing,
+                propId: bl.propId,
+              });
+            });
+
+            pourResult.isTG = false;
+          }
+        }
       } else {
         // Determine if stack reaches ground
         const reachesGround = activeBelowEntries.some(b => {
@@ -2710,8 +3113,6 @@ function runCalc() {
             if (!blev) return;
             const isGndLevel = isBaseLevel(blev);
 
-            // For base level AND intermediate levels in T/G case:
-            // props carry the FULL wet load. Compute spacing based on prop cap.
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
             const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
@@ -2734,8 +3135,6 @@ function runCalc() {
 
         } else {
           // ── CASE B: Distributed across load-bearing slabs ────────────────
-          // Each slab absorbs its stated capacity. Any remainder after the last
-          // slab = FAIL (no prop spacing result possible).
           let cumLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
@@ -2753,7 +3152,6 @@ function runCalc() {
               status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
               if (propSpacing <= 0) pourResult.isNP = true;
             } else {
-              // Load already fully absorbed higher up
               status = 'no load';
               propSpacing = null;
             }
@@ -2777,18 +3175,16 @@ function runCalc() {
             cumLoad = Math.max(0, cumLoad - effectiveCap);
           });
 
-          // Check for remainder — any load not absorbed = FAIL
           if (cumLoad > 0.01) {
             pourResult.isNP = true;
             pourResult.isTG = false;
             pourResult.failReason = `Load not fully resolved — ${cumLoad.toFixed(2)} kPa remaining after the last load-bearing level. Add more load-bearing levels or increase slab capacity.`;
-            // Clear all prop spacings — no result is valid
             pourResult.levels.forEach(l => {
               l.status = 'Fail';
               l.propSpacing = null;
             });
           } else {
-            pourResult.isTG = false; // resolved through slabs, not ground
+            pourResult.isTG = false;
           }
         }
       }
@@ -2822,6 +3218,14 @@ function renderEngineerView() {
   document.getElementById('engJobNo').textContent = 'Job No. ' + project.jobNo;
   document.getElementById('engDensity').value = project.concDensity;
   document.getElementById('engSpacing').value = project.maxSpacing;
+  const methodBadgeEl = document.getElementById('engMethodBadge');
+  if (methodBadgeEl) {
+    const isSharing = project.calcMethod === 'sharing';
+    methodBadgeEl.textContent = isSharing ? 'Load Sharing' : 'Load Balancing';
+    methodBadgeEl.style.color = isSharing ? 'var(--accent2)' : 'var(--accent)';
+    methodBadgeEl.style.borderColor = isSharing ? 'rgba(196,125,255,0.3)' : 'rgba(232,160,32,0.25)';
+    methodBadgeEl.style.background = isSharing ? 'rgba(196,125,255,0.1)' : 'rgba(232,160,32,0.1)';
+  }
 
   if (!calcResults || calcResults.length === 0) {
     document.getElementById('engineerMain').innerHTML = `
@@ -2969,14 +3373,25 @@ function renderEngineerView() {
       return `<td class="${cap === null ? 'cell-empty' : 'cell-ok'}">${cap !== null ? cap.toFixed(2) : '—'}</td>`;
     });
 
-  // ── 5. Slab Stiffness Modifier ───────────────────────────────────────────────
-  matHtml += matBlock('Slab Stiffness Modifier','SM','SM applied to slab capacity. 1.00 = full capacity, &lt;1.00 = reduced',
+  // ── 5. SM / Distribution % ───────────────────────────────────────────────────
+  const isSharing5 = (project.calcMethod === 'sharing');
+  matHtml += matBlock(
+    isSharing5 ? 'Load Distribution' : 'Slab Stiffness Modifier',
+    isSharing5 ? '%' : 'SM',
+    isSharing5 ? '% of total construction load attracted by each slab. All slabs must pass capacity check before spacings shown.' : 'SM applied to slab capacity. 1.00 = full capacity, &lt;1.00 = reduced',
     (r, levelName) => {
       const isBaseRow = levels.length > 0 && levels[0].name === levelName;
       if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
       if (!entry) return `<td class="cell-empty">—</td>`;
       if (isBaseRow) return `<td class="cell-tg" style="font-size:13px">∞</td>`;
+      if (isSharing5) {
+        const pct = entry.distPct ?? 0;
+        const share = entry.slabShare ?? 0;
+        const cap = entry.capacity ?? 0;
+        const passes = cap >= share;
+        return `<td class="${passes ? 'cell-ok' : 'cell-np'}" title="Slab attracts ${share.toFixed(2)} kPa, capacity ${cap.toFixed(2)} kPa">${pct.toFixed(0)}%</td>`;
+      }
       const sm = entry.sm ?? 1.0;
       return `<td class="${sm >= 1.0 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np'}">${sm.toFixed(2)}</td>`;
     });
@@ -3022,6 +3437,7 @@ function renderEngineerView() {
           <div class="info-row"><span class="info-key">Slab self-weight</span><span class="info-val">${r.slabLoad.toFixed(2)} kPa</span></div>
           <div class="info-row"><span class="info-key">Total wet load</span><span class="info-val">${r.totalLoad.toFixed(2)} kPa</span></div>
           <div class="info-row"><span class="info-key">Back-prop levels</span><span class="info-val">${r.levels.length}</span></div>
+          <div class="info-row"><span class="info-key">Method</span><span class="info-val" style="color:${project.calcMethod === 'sharing' ? 'var(--accent2)' : 'var(--text-muted)'};">${project.calcMethod === 'sharing' ? 'Load Sharing' : 'Load Balancing'}</span></div>
           <div class="info-row"><span class="info-key">Resolution</span><span class="info-val" style="color:${resolutionColour};font-weight:600">${resolutionLabel}</span></div>
           ${r.isNP ? `<div style="margin-top:8px;padding:8px;background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2);border-radius:5px;color:var(--np);font-size:10px">⚠ ${r.failReason || 'Review back-propping arrangement.'}</div>` : ''}
         </div>
@@ -3191,6 +3607,7 @@ function openProjModal() {
   document.getElementById('concDensity').value = project.concDensity;
   document.getElementById('maxSpacing').value = project.maxSpacing;
   document.getElementById('projModal').classList.add('open');
+  setTimeout(() => setCalcMethod(project.calcMethod || 'balancing'), 0);
 }
 
 function closeProjModal() {
@@ -3322,13 +3739,15 @@ async function exportResults() {
     return parseFloat((entry.capacity||0).toFixed(2));
   }), 'SLAB CAPACITY');
 
-  // ── 5. Slab Stiffness Modifier ─────────────────────────────────────────────
-  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Slab Stiffness Modifier', (r, lvl, entry, isWet, isGround) => {
+  // ── 5. Slab Stiffness Modifier / Distribution % ───────────────────────────
+  const isSharing5x = (project.calcMethod === 'sharing');
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet(isSharing5x ? 'Load Distribution %' : 'Slab Stiffness Modifier', (r, lvl, entry, isWet, isGround) => {
     if (isWet) return 'WET';
     if (isGround) return '∞';
     if (!entry) return '';
+    if (isSharing5x) return (entry.distPct ?? 0).toFixed(0) + '%';
     return parseFloat((entry.sm || 1.0).toFixed(2));
-  }), 'STIFFNESS MODIFIER');
+  }), isSharing5x ? 'DIST PERCENT' : 'STIFFNESS MODIFIER');
 
   // ── 6. Additional Load ─────────────────────────────────────────────────────
   XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Additional Load (kPa)', (r, lvl, entry, isWet, isGround) => {

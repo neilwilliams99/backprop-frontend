@@ -1929,6 +1929,17 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
+  // Trial users limited to 1 project
+  const accessInfo = currentUser ? await checkAccess(currentUser) : null;
+  if (accessInfo && accessInfo.reason === 'trial' && projectStore.length >= 1) {
+    await dlgAlert(
+      'Trial Limit Reached',
+      'Free trial accounts are limited to 1 project. Subscribe to create unlimited projects.',
+      'Subscribe Now'
+    );
+    showPaywall('trial_limit');
+    return;
+  }
   const result = await dlgPrompt(
     'New Project',
     'Enter project details to get started.',
@@ -3230,46 +3241,117 @@ function updateSummary() {
 // ════════════════════════════════════════════════
 //  EXPORT
 // ════════════════════════════════════════════════
-function exportResults() {
+async function exportResults() {
   if (!calcResults || calcResults.length === 0) {
     showToast('Run calculation first', 'error'); return;
   }
+  // Block export on trial
+  const accessInfo = currentUser ? await checkAccess(currentUser) : null;
+  if (accessInfo && accessInfo.reason === 'trial') {
+    await dlgAlert(
+      'Export Not Available on Trial',
+      'Exporting results requires a paid subscription. Subscribe to unlock full export functionality.',
+      'Subscribe Now'
+    );
+    showPaywall('trial_limit');
+    return;
+  }
   const wb = XLSX.utils.book_new();
 
-  // Summary
-  const pourLabels = calcResults.map(r => r.label);
-  const rowNames = [...new Set(levels.map(l=>l.name))].reverse();
+  // ── Helper: build a matrix sheet ──────────────────────────────────────────
+  function makeMatrixSheet(title, cellFn) {
+    // Collect all unique pour/zone labels and level names
+    const pourLabels = calcResults.map(r => r.label);
+    const levelNames = [];
+    [...levels].reverse().forEach(lev => { if (!levelNames.includes(lev.name)) levelNames.push(lev.name); });
 
-  const summaryData = [['Level / Zone', ...pourLabels]];
-  rowNames.forEach(n => {
-    const row = [n];
-    calcResults.forEach(r => {
-      if (r.levelName === n) { row.push('WET'); return; }
-      const e = r.levels.find(l=>l.name===n);
-      row.push(e ? e.status : '');
+    const header = ['LEVEL', ...pourLabels];
+    const rows = [['', title], header];
+
+    levelNames.forEach(lvlName => {
+      const row = [lvlName];
+      calcResults.forEach(r => {
+        const isWet = r.levelName === lvlName;
+        const isGround = lvlName === levels[0].name;
+        const entry = r.levels ? r.levels.find(l => l.name === lvlName) : null;
+        row.push(cellFn(r, lvlName, entry, isWet, isGround));
+      });
+      rows.push(row);
     });
-    summaryData.push(row);
+    return XLSX.utils.aoa_to_sheet(rows);
+  }
+
+  // ── 1. Prop Spacing ────────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Prop Spacing (m c/c)', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return '∞';
+    if (!entry) return '';
+    if (entry.propSpacing === null || entry.propSpacing === undefined) return entry.isTG ? 'TG' : '';
+    return parseFloat(entry.propSpacing.toFixed(2));
+  }), 'PROP SPACING');
+
+  // ── 2. Prop Type ───────────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Prop Type', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return entry ? (entry.propType || '') : '';
+    if (!entry) return '';
+    return entry.propType || '';
+  }), 'PROP TYPE');
+
+  // ── 3. Cumulative Load ─────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Cumulative Load (kPa)', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return entry ? parseFloat((entry.cumulativeLoad||0).toFixed(2)) : '';
+    if (!entry) return '';
+    return parseFloat((entry.cumulativeLoad||0).toFixed(2));
+  }), 'CUMULATIVE LOAD');
+
+  // ── 4. Slab Capacity ───────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Slab Capacity (kPa)', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return '∞';
+    if (!entry) return '';
+    return parseFloat((entry.capacity||0).toFixed(2));
+  }), 'SLAB CAPACITY');
+
+  // ── 5. Slab Stiffness Modifier ─────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Slab Stiffness Modifier', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return '∞';
+    if (!entry) return '';
+    return parseFloat((entry.sm || 1.0).toFixed(2));
+  }), 'STIFFNESS MODIFIER');
+
+  // ── 6. Additional Load ─────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Additional Load (kPa)', (r, lvl, entry, isWet, isGround) => {
+    if (isWet) return 'WET';
+    if (isGround) return '';
+    if (!entry) return '';
+    const bl = r.backpropLevels ? r.backpropLevels.find(b => b.name === lvl) : null;
+    return bl ? parseFloat((bl.addLoad||0).toFixed(2)) : '';
+  }), 'ADDITIONAL LOAD');
+
+  // ── 7. Pour Scenario Summary ───────────────────────────────────────────────
+  const summaryData = [['Zone', 'Pour Level', 'Thickness mm', 'Slab Load kPa', 'Total Load kPa', 'Back-prop Levels', 'Governing Spacing', 'Result']];
+  calcResults.forEach(r => {
+    summaryData.push([
+      r.label, r.levelName, r.thickness,
+      parseFloat(r.slabLoad.toFixed(2)),
+      parseFloat(r.totalLoad.toFixed(2)),
+      r.levels ? r.levels.filter(l => l.propSpacing).length : 0,
+      r.maxSpacingAchieved ? parseFloat(r.maxSpacingAchieved.toFixed(2)) : (r.isNP ? 'FAIL' : 'To Ground'),
+      r.isNP ? 'FAIL' : 'PASS',
+    ]);
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'SUMMARY');
 
-  // Detail
-  const detailData = [['Zone', 'Thickness mm', 'Slab Load kPa', 'Total Load kPa', 'Gov Spacing', 'To Ground', 'Fail']];
-  calcResults.forEach(r => {
-    detailData.push([
-      r.label, r.thickness,
-      r.slabLoad.toFixed(2), r.totalLoad.toFixed(2),
-      r.maxSpacingAchieved ? r.maxSpacingAchieved.toFixed(2)+'m' : (r.isNP?'Fail':'To Ground'),
-      r.isTG?'YES':'NO', r.isNP?'YES':'NO',
-    ]);
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailData), 'DETAIL');
-
-  // Prop library
+  // ── 8. Prop Library ────────────────────────────────────────────────────────
   const propData = [['Type', 'Extension', 'Capacity kN', 'Notes', 'Default']];
   getProps().forEach(p => propData.push([p.type, p.extension, p.capacity, p.notes, p.isDefault?'YES':'NO']));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(propData), 'PROP LIBRARY');
 
-  XLSX.writeFile(wb, `${project.jobNo}_backpropping.xlsx`);
+  const filename = (project.jobNo || 'backprop') + '_backpropping.xlsx';
+  XLSX.writeFile(wb, filename);
   showToast('Exported to XLSX', 'success');
 }
 
@@ -3308,7 +3390,15 @@ let _dialogResolve = null;
 
 function _openDialog({ title, sub='', confirmText='Confirm', confirmClass='btn-accent', dangerConfirm=false,
                        input=null, inputPlaceholder='', inputDefault='',
-                       input2Label='', input2Placeholder='', input2Default='' }) {
+                       input2Label='', input2Placeholder='', input2Default='',
+                       cancelText='Cancel' }) {
+  // Handle cancel button visibility
+  const cancelBtn = document.getElementById('dialogCancel');
+  if (cancelBtn) {
+    cancelBtn.style.display = cancelText === null ? 'none' : 'inline-block';
+    if (cancelText && cancelText !== 'Cancel') cancelBtn.textContent = cancelText;
+    else cancelBtn.textContent = 'Cancel';
+  }
   document.getElementById('dialogTitle').textContent = title;
   document.getElementById('dialogSub').textContent = sub;
   document.getElementById('dialogSub').style.display = sub ? 'block' : 'none';
@@ -3360,6 +3450,10 @@ async function dlgPrompt(title, sub='', inputPlaceholder='', inputDefault='', in
   return _openDialog({ title, sub, input: true, inputPlaceholder, inputDefault, input2Label, input2Placeholder, input2Default, confirmText });
 }
 
+async function dlgAlert(title, sub='', confirmText='OK') {
+  return _openDialog({ title, sub, confirmText, cancelText: null, dangerConfirm: false });
+}
+
 
 
 // ════════════════════════════════════════════════
@@ -3408,6 +3502,11 @@ function showPaywall(reason) {
     document.getElementById('paywallTitle').textContent = 'Free Trial Ended';
     document.getElementById('paywallMsg').textContent =
       'Your 7-day free trial has ended. Subscribe to continue using BackProp.';
+  } else if (reason === 'trial_limit') {
+    document.getElementById('paywallIcon').textContent = '🔓';
+    document.getElementById('paywallTitle').textContent = 'Upgrade to Unlock';
+    document.getElementById('paywallMsg').textContent =
+      'Your free trial includes 1 project and view-only results. Subscribe for unlimited projects and full export.';
   } else {
     document.getElementById('paywallTitle').textContent = 'Subscription Required';
     document.getElementById('paywallMsg').textContent =

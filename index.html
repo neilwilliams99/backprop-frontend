@@ -1192,7 +1192,8 @@ header {
       <button id="paywallBtn" onclick="startCheckout()" class="btn btn-accent" style="width:100%;padding:12px;font-size:13px;font-family:'Syne',sans-serif;font-weight:700">
         Subscribe Now
       </button>
-      <button onclick="signOut()" class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:11px">Sign out</button>
+      <button onclick="document.getElementById('paywallScreen').style.display='none';document.getElementById('projectListScreen').style.display='flex';" class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:11px">← Back to Dashboard</button>
+      <button onclick="signOut()" class="btn btn-ghost" style="width:100%;margin-top:4px;font-size:10px;color:var(--text-muted)">Sign out</button>
     </div>
   </div>
 </div>
@@ -1575,6 +1576,13 @@ async function handleAuth() {
     } else {
       msgEl.textContent = 'Account created! Check your email to confirm, then sign in.';
       msgEl.style.display = 'block';
+      // Clear form and reset to sign in mode
+      document.getElementById('authEmail').value = '';
+      document.getElementById('authPassword').value = '';
+      document.getElementById('authFirstName').value = '';
+      document.getElementById('authLastName').value = '';
+      document.getElementById('authTermsCheck').checked = false;
+      setTimeout(() => setAuthMode('signin'), 2000);
     }
   } else {
     const { error } = await supa.auth.signInWithPassword({ email, password });

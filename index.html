@@ -1149,11 +1149,22 @@ header {
             <input id="authPassword" type="password" placeholder="••••••••" style="width:100%;box-sizing:border-box;background:#0a0e13;border:1px solid #2a3447;border-radius:5px;padding:8px 10px;color:#dde8f5;font-family:'DM Mono',monospace;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')handleAuth()">
           </div>
           <div id="authError" style="display:none;color:#f05050;font-size:11px;font-family:'DM Mono',monospace;padding:8px;background:rgba(240,80,80,0.08);border-radius:4px"></div>
+          <div id="authTermsRow" style="display:none;align-items:flex-start;gap:8px">
+            <input type="checkbox" id="authTermsCheck" style="margin-top:2px;accent-color:#e8a020;cursor:pointer">
+            <label for="authTermsCheck" style="font-size:10px;color:#7d8590;font-family:'DM Mono',monospace;line-height:1.5;cursor:pointer">
+              I agree to the <a href="#" onclick="openLegal('terms');return false;" style="color:#4da8ff;text-decoration:none">Terms & Conditions</a>,
+              <a href="#" onclick="openLegal('privacy');return false;" style="color:#4da8ff;text-decoration:none">Privacy Policy</a> and
+              <a href="#" onclick="openLegal('disclaimer');return false;" style="color:#4da8ff;text-decoration:none">Disclaimer</a>
+            </label>
+          </div>
           <button id="authBtn" onclick="handleAuth()" style="margin-top:4px;padding:10px;background:#e8a020;color:#000;border:none;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer">Sign In</button>
         </div>
         <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
-        <div style="margin-top:20px;text-align:center;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace">
-          Need help? <a href="mailto:neil.williams@ikbeng.com" style="color:#7d8590;text-decoration:none">Contact support</a>
+        <div style="margin-top:20px;text-align:center;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace;line-height:1.8">
+          Need help? <a href="mailto:neil.williams@ikbeng.com" style="color:#7d8590;text-decoration:none">Contact support</a><br>
+          <a href="#" onclick="openLegal('terms');return false;" style="color:#4a5568;text-decoration:none">Terms & Conditions</a> ·
+          <a href="#" onclick="openLegal('privacy');return false;" style="color:#4a5568;text-decoration:none">Privacy Policy</a> ·
+          <a href="#" onclick="openLegal('disclaimer');return false;" style="color:#4a5568;text-decoration:none">Disclaimer</a>
         </div>
       </div>
 
@@ -1486,6 +1497,8 @@ function setAuthMode(mode) {
   const isSignup = mode === 'signup';
   const isSignin = mode === 'signin';
   document.getElementById('authNameFields').style.display = isSignup ? 'grid' : 'none';
+  document.getElementById('authTermsRow').style.display = isSignup ? 'flex' : 'none';
+  if (!isSignup) document.getElementById('authTermsCheck').checked = false;
   document.getElementById('authPasswordField').style.display = isReset ? 'none' : 'block';
   document.getElementById('forgotLink').style.display = isSignin ? 'block' : 'none';
   // Tab strip: hide when in reset mode
@@ -1541,6 +1554,12 @@ async function handleAuth() {
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; errEl.style.display = 'block'; return; }
   document.getElementById('authBtn').textContent = '…';
   if (authMode === 'signup') {
+    if (!document.getElementById('authTermsCheck').checked) {
+      errEl.textContent = 'Please agree to the Terms & Conditions, Privacy Policy and Disclaimer.';
+      errEl.style.display = 'block';
+      document.getElementById('authBtn').textContent = 'Create Account';
+      return;
+    }
     const firstName = document.getElementById('authFirstName').value.trim();
     const lastName  = document.getElementById('authLastName').value.trim();
     const { data, error } = await supa.auth.signUp({ email, password, options: { data: { first_name: firstName, last_name: lastName } } });
@@ -1574,6 +1593,112 @@ async function handleAuth() {
   document.getElementById('authPassword').value = '';
   document.getElementById('authFirstName').value = '';
   document.getElementById('authLastName').value = '';
+}
+
+
+// ════════════════════════════════════════════════
+//  LEGAL MODALS
+// ════════════════════════════════════════════════
+
+const legalContent = {
+  terms: {
+    title: 'Terms & Conditions',
+    body: `
+<p style="color:#e8a020;font-size:11px;letter-spacing:1px;font-family:'DM Mono',monospace;margin:0 0 28px;text-transform:uppercase">Last updated: March 2026</p>
+
+<p style="color:#dde8f5;font-size:14px;line-height:1.8;margin-bottom:24px">Welcome to BackProp. These terms cover your use of our slab back-propping design tool. By creating an account you're agreeing to these terms, so please take a few minutes to read them.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Who we are</h3>
+<p>BackProp is operated by IKB Engineering Pty Ltd (ABN 90 672 228 965), a structural engineering consultancy based in Western Australia. You can reach us at neil.williams@ikbeng.com.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Your subscription</h3>
+<p>BackProp is offered on a monthly subscription basis at A$30/month (inclusive of GST where applicable). You get a 7-day free trial when you sign up — no charge until the trial ends. You can cancel at any time from your account settings and you won't be charged again after that. We don't offer refunds for partial months.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">What you can do with it</h3>
+<p>Your subscription gives you access to use BackProp for your own professional work. You can't share your login, resell access, or use it to build a competing product. The tool and its underlying calculations are our intellectual property.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Your data</h3>
+<p>Your projects are stored securely in our database. We don't sell your data or share it with third parties except as needed to run the service (payment processing via Stripe, authentication via Supabase). See our Privacy Policy for the full story.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Changes to the service</h3>
+<p>We're constantly improving BackProp. We might add features, change how things work, or occasionally need to take the service offline briefly for maintenance. We'll give you reasonable notice of any significant changes.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Ending your account</h3>
+<p>You can close your account at any time. We may suspend or close accounts that violate these terms. If that happens we'll let you know why.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Governing law</h3>
+<p>These terms are governed by the laws of Western Australia, Australia.</p>
+    `
+  },
+
+  privacy: {
+    title: 'Privacy Policy',
+    body: `
+<p style="color:#e8a020;font-size:11px;letter-spacing:1px;font-family:'DM Mono',monospace;margin:0 0 28px;text-transform:uppercase">Last updated: March 2026</p>
+
+<p style="color:#dde8f5;font-size:14px;line-height:1.8;margin-bottom:24px">We take your privacy seriously. Here's a straightforward explanation of what data we collect, why we collect it, and what we do with it.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">What we collect</h3>
+<p>When you sign up we collect your name and email address. When you use the tool we store your project data (building levels, zones, prop configurations, and calculation results). When you subscribe we process your payment through Stripe — we never see or store your card details directly.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Why we collect it</h3>
+<p>Your name and email are needed to create and manage your account and send you important service emails (like email verification and password resets). Your project data is stored so you can access it across devices and sessions. We use Google Analytics to understand how people use the site so we can improve it — this is anonymised and doesn't identify you personally.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Who we share it with</h3>
+<p>We use a small number of trusted third-party services to run BackProp: Supabase for authentication and database storage, Stripe for payment processing, and Resend for transactional emails. Each of these providers has their own privacy policy and handles your data securely. We don't sell your data to anyone, ever.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Where it's stored</h3>
+<p>Your data is stored on Supabase's infrastructure. Supabase uses AWS data centres. We've configured our project to use servers in the US East region.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Your rights</h3>
+<p>Under the Australian Privacy Act you have the right to access the personal information we hold about you, and to ask us to correct or delete it. Just email us at neil.williams@ikbeng.com and we'll sort it out promptly.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Cookies</h3>
+<p>We use session cookies to keep you logged in, and Google Analytics uses cookies for anonymous usage tracking. We don't use advertising cookies or track you across other websites.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Questions</h3>
+<p>If you have any questions about how we handle your data, email us at neil.williams@ikbeng.com.</p>
+    `
+  },
+
+  disclaimer: {
+    title: 'Disclaimer',
+    body: `
+<p style="color:#e8a020;font-size:11px;letter-spacing:1px;font-family:'DM Mono',monospace;margin:0 0 28px;text-transform:uppercase">Last updated: March 2026</p>
+
+<p style="color:#dde8f5;font-size:14px;line-height:1.8;margin-bottom:24px">BackProp is a design aid for qualified structural and temporary works engineers. Before you use it, there are a few important things to understand.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">It's a tool, not a substitute for engineering judgement</h3>
+<p>BackProp automates back-propping calculations but it doesn't replace your professional judgement, experience, or duty of care. Every project is different. You're responsible for verifying that the tool's outputs are appropriate for your specific situation, including site conditions, construction sequence, and applicable standards.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Check your results</h3>
+<p>We've worked hard to make BackProp accurate and reliable, but no software is perfect. Always cross-check results against your own calculations and engineering judgement before using them on a project. Don't use BackProp as the sole basis for any engineering decision.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Standards and codes</h3>
+<p>BackProp is designed for use in Australia in accordance with AS 3610 and related standards. It's your responsibility to ensure you're applying the correct standards for your jurisdiction and project type.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Liability</h3>
+<p>To the maximum extent permitted by Australian law, IKB Engineering Pty Ltd accepts no liability for any loss, damage, or consequences arising from the use of BackProp. This includes errors in calculation outputs, misapplication of results, or any decisions made on the basis of the tool's outputs.</p>
+
+<h3 style="color:#dde8f5;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #2a3447">Professional responsibility</h3>
+<p>If you're a Chartered Professional Engineer or registered practitioner, your professional obligations remain unchanged regardless of what tools you use. BackProp is designed to assist qualified engineers — not to replace the need for one.</p>
+
+<p style="margin-top:20px;padding:12px;background:rgba(232,160,32,0.08);border:1px solid rgba(232,160,32,0.2);border-radius:6px;color:#e8a020">By using BackProp you confirm that you are a qualified engineer or working under the supervision of one, and that you accept these terms.</p>
+    `
+  }
+};
+
+function openLegal(type) {
+  const doc = legalContent[type];
+  if (!doc) return;
+  document.getElementById('legalTitle').textContent = doc.title;
+  document.getElementById('legalBody').innerHTML = doc.body;
+  document.getElementById('legalPage').style.display = 'block';
+  document.getElementById('legalPage').scrollTop = 0;
+}
+
+function closeLegal() {
+  document.getElementById('legalPage').style.display = 'none';
 }
 
 async function signOut() {
@@ -3505,5 +3630,23 @@ function updateDashWelcome() {
     </div>
   </div>
 </div>
+
+<!-- ══ LEGAL PAGE ══ -->
+<div id="legalPage" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:2000;overflow-y:auto">
+  <!-- Header -->
+  <div style="background:#111720;border-bottom:1px solid #2a3447;padding:16px 40px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:10">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px;color:#dde8f5">
+      BACK<span style="color:#e8a020">PROP</span>
+    </div>
+    <div style="width:1px;height:20px;background:#2a3447"></div>
+    <div id="legalTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#7d8590"></div>
+    <button onclick="closeLegal()" style="margin-left:auto;background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border-radius:5px;cursor:pointer">← Back</button>
+  </div>
+  <!-- Content -->
+  <div style="max-width:720px;margin:0 auto;padding:48px 40px 80px">
+    <div id="legalBody" style="font-family:'DM Mono',monospace;font-size:13px;color:#7d8590;line-height:1.9"></div>
+  </div>
+</div>
+
 </body>
 </html>

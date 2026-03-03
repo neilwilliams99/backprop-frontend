@@ -953,7 +953,7 @@ header {
 
 /* ── PROJECT LIST SCREEN ── */
 #projectListScreen {
-  position: fixed; inset: 0; z-index: 100;
+  position: fixed; inset: 0; z-index: 500;
   background: var(--bg);
   display: flex; flex-direction: column;
   align-items: stretch;
@@ -1199,7 +1199,7 @@ header {
 </div>
 
 <!-- ══ PROJECT LIST SCREEN ══ -->
-<div id="projectListScreen" style="display:none">
+<div id="projectListScreen" style="display:none;z-index:100;position:relative">
   <!-- Dashboard Header -->
   <div class="dash-header">
     <div class="logo">
@@ -3925,6 +3925,9 @@ function getTrialDaysLeft(user) {
 }
 
 async function checkAccess(user) {
+  // Admin accounts — full access bypasses all checks
+  const ADMIN_IDS = ['b327a790-03b7-49ed-9795-8459168090f7'];
+  if (ADMIN_IDS.includes(user.id)) return { access: true, reason: 'subscribed' };
   // First check trial period
   const trialDaysLeft = getTrialDaysLeft(user);
 

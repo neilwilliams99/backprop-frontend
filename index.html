@@ -2101,6 +2101,7 @@ function setNpMethod(method) {
   const balBtn = document.getElementById('npMethodBalancingBtn');
   const sharBtn = document.getElementById('npMethodSharingBtn');
   const desc = document.getElementById('npMethodDesc');
+  if (!balBtn || !sharBtn || !desc) return;
   if (method === 'balancing') {
     balBtn.style.border = '2px solid var(--accent)';
     balBtn.style.background = 'rgba(232,160,32,0.1)';

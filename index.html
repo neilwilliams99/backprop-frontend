@@ -1256,90 +1256,6 @@ header {
 
 
 
-<!-- ══ PROJECT SETTINGS MODAL ══ -->
-<div class="modal-overlay" id="projModal">
-  <div class="modal">
-    <div class="modal-title">Project Settings</div>
-    <div class="modal-sub">Configure project details and engineering parameters.</div>
-    <div class="proj-modal-grid">
-      <div class="field-group" style="grid-column:1/-1">
-        <label class="field-label">Project Name</label>
-        <input class="field-input" id="projName" value="Project 10354">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Job Number</label>
-        <input class="field-input" id="jobNo" value="10354">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Prepared By</label>
-        <input class="field-input" id="prepBy" value="">
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Engineering Parameters</div>
-    <div class="proj-modal-grid">
-      <div class="field-group">
-        <label class="field-label">Concrete density (kN/m³)</label>
-        <input class="field-input" id="concDensity" type="number" value="24" step="0.5">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Max prop spacing (m)</label>
-        <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
-    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="methodBalancingBtn" onclick="setCalcMethod('balancing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Balancing
-        </button>
-        <button id="methodSharingBtn" onclick="setCalcMethod('sharing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Sharing
-        </button>
-      </div>
-      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border);min-height:48px;display:flex;align-items:center">
-        Load is distributed across slabs based on individual slab capacities. Traditional method.
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Prop Library</div>
-    <div id="projModalPropTable" style="margin-bottom:8px"></div>
-    <div id="projModalPropForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
-      <div style="font-size:11px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:10px" id="modalPropFormTitle">Add Prop</div>
-      <input type="hidden" id="modalPropEditId">
-      <div class="proj-modal-grid">
-        <div class="field-group">
-          <label class="field-label">Type / Model</label>
-          <input class="field-input" id="modalPropType" placeholder="e.g. Acrow #2">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Extension</label>
-          <input class="field-input" id="modalPropExtension" placeholder="e.g. 2.0–3.4m">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Capacity (kN)</label>
-          <input class="field-input" type="number" id="modalPropCapacity" placeholder="e.g. 22" step="0.5">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Notes (optional)</label>
-          <input class="field-input" id="modalPropNotes" placeholder="Manufacturer, load case…">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="btn btn-accent" style="flex:1" onclick="saveModalProp()">Save Prop</button>
-        <button class="btn btn-ghost" onclick="clearModalPropForm()">Cancel</button>
-      </div>
-    </div>
-    <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="showModalPropForm()">+ Add Prop</button>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
-      <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ APP ══ -->
 <div class="app">
@@ -4071,70 +3987,6 @@ function updateDashWelcome() {
 </script>
 
 <!-- ══ CUSTOM DIALOG (replaces alert/confirm/prompt) ══ -->
-<div class="modal-overlay" id="customDialog" onclick="if(event.target===this)_closeDialog(null)">
-  <div class="modal" style="width:400px">
-    <div class="modal-title" id="dialogTitle"></div>
-    <div class="modal-sub" id="dialogSub" style="margin-bottom:14px"></div>
-    <div id="dialogInputWrap" style="display:none;margin-bottom:4px">
-      <input class="field-input" id="dialogInput" style="width:100%;box-sizing:border-box"
-        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
-    </div>
-    <div id="dialogInput2Wrap" style="display:none;margin-top:8px">
-      <label class="field-label" id="dialogInput2Label"></label>
-      <input class="field-input" id="dialogInput2" style="width:100%;box-sizing:border-box"
-        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
-    </div>
-    <div class="modal-actions" style="margin-top:16px">
-      <button class="btn btn-ghost" id="dialogCancel" onclick="_closeDialog(null)">Cancel</button>
-      <button class="btn btn-accent" id="dialogConfirm" onclick="(function(){const inp=document.getElementById('dialogInput').value;const inp2=document.getElementById('dialogInput2').value;const vis=document.getElementById('dialogInputWrap').style.display!=='none';_closeDialog(vis?{v1:inp,v2:inp2}:true)})()">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ USER SETTINGS MODAL ══ -->
-<div class="modal-overlay" id="userSettingsModal">
-  <div class="modal" style="width:420px">
-    <div class="modal-title">User Settings</div>
-    <div class="modal-sub">Update your profile details.</div>
-    <div class="field-group">
-      <label class="field-label">First Name</label>
-      <input class="field-input" id="settingsFirstName" placeholder="First name">
-    </div>
-    <div class="field-group" style="margin-top:8px">
-      <label class="field-label">Last Name</label>
-      <input class="field-input" id="settingsLastName" placeholder="Last name">
-    </div>
-    <div class="field-group" style="margin-top:8px">
-      <label class="field-label">Email</label>
-      <input class="field-input" id="settingsEmail" disabled style="opacity:0.5;cursor:not-allowed" title="Email cannot be changed">
-      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace">Email address cannot be changed.</div>
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:8px">Subscription</div>
-      <div id="settingsSubStatus" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-bottom:12px"></div>
-      <button id="subscribeBtn" class="btn btn-accent" style="font-size:11px;width:100%;display:none;margin-bottom:8px" onclick="document.getElementById('userSettingsModal').classList.remove('open');showPaywall('trial_limit')">Subscribe Now — A$30/month</button>
-      <button id="manageSubBtn" class="btn btn-ghost" style="font-size:11px;width:100%;display:none" onclick="manageSubscription()">Manage Subscription via Stripe</button>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="document.getElementById('userSettingsModal').classList.remove('open')">Cancel</button>
-      <button class="btn btn-accent" onclick="saveUserSettings()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ LEGAL PAGE ══ -->
-<div id="legalPage" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:99999;overflow-y:auto">
-  <!-- Header -->
-  <div style="background:#111720;border-bottom:1px solid #2a3447;padding:16px 40px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:10">
-    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px;color:#dde8f5">
-      BACK<span style="color:#e8a020">PROP</span>
-    </div>
-    <div style="width:1px;height:20px;background:#2a3447"></div>
-    <div id="legalTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#7d8590"></div>
-    <button onclick="closeLegal()" style="margin-left:auto;background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border-radius:5px;cursor:pointer">← Back</button>
-  </div>
-  <!-- Content -->
-  <div style="max-width:720px;margin:0 auto;padding:48px 40px 8
 
 <!-- ══ NEW PROJECT MODAL ══ -->
 <div class="modal-overlay" id="newProjModal">
@@ -4211,3 +4063,154 @@ function updateDashWelcome() {
     </div>
   </div>
 </div>
+
+
+<!-- ══ PROJECT SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="projModal">
+  <div class="modal">
+    <div class="modal-title">Project Settings</div>
+    <div class="modal-sub">Configure project details and engineering parameters.</div>
+    <div class="proj-modal-grid">
+      <div class="field-group" style="grid-column:1/-1">
+        <label class="field-label">Project Name</label>
+        <input class="field-input" id="projName" value="Project 10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Number</label>
+        <input class="field-input" id="jobNo" value="10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Prepared By</label>
+        <input class="field-input" id="prepBy" value="">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Engineering Parameters</div>
+    <div class="proj-modal-grid">
+      <div class="field-group">
+        <label class="field-label">Concrete density (kN/m³)</label>
+        <input class="field-input" id="concDensity" type="number" value="24" step="0.5">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Max prop spacing (m)</label>
+        <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="methodBalancingBtn" onclick="setCalcMethod('balancing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Balancing
+        </button>
+        <button id="methodSharingBtn" onclick="setCalcMethod('sharing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Sharing
+        </button>
+      </div>
+      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border);min-height:48px;display:flex;align-items:center">
+        Load is distributed across slabs based on individual slab capacities. Traditional method.
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Prop Library</div>
+    <div id="projModalPropTable" style="margin-bottom:8px"></div>
+    <div id="projModalPropForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
+      <div style="font-size:11px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:10px" id="modalPropFormTitle">Add Prop</div>
+      <input type="hidden" id="modalPropEditId">
+      <div class="proj-modal-grid">
+        <div class="field-group">
+          <label class="field-label">Type / Model</label>
+          <input class="field-input" id="modalPropType" placeholder="e.g. Acrow #2">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Extension</label>
+          <input class="field-input" id="modalPropExtension" placeholder="e.g. 2.0–3.4m">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacity (kN)</label>
+          <input class="field-input" type="number" id="modalPropCapacity" placeholder="e.g. 22" step="0.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes (optional)</label>
+          <input class="field-input" id="modalPropNotes" placeholder="Manufacturer, load case…">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-accent" style="flex:1" onclick="saveModalProp()">Save Prop</button>
+        <button class="btn btn-ghost" onclick="clearModalPropForm()">Cancel</button>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="showModalPropForm()">+ Add Prop</button>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="customDialog" onclick="if(event.target===this)_closeDialog(null)">
+  <div class="modal" style="width:400px">
+    <div class="modal-title" id="dialogTitle"></div>
+    <div class="modal-sub" id="dialogSub" style="margin-bottom:14px"></div>
+    <div id="dialogInputWrap" style="display:none;margin-bottom:4px">
+      <input class="field-input" id="dialogInput" style="width:100%;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
+    </div>
+    <div id="dialogInput2Wrap" style="display:none;margin-top:8px">
+      <label class="field-label" id="dialogInput2Label"></label>
+      <input class="field-input" id="dialogInput2" style="width:100%;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')document.getElementById('dialogConfirm').click();if(event.key==='Escape')_closeDialog(null)">
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn btn-ghost" id="dialogCancel" onclick="_closeDialog(null)">Cancel</button>
+      <button class="btn btn-accent" id="dialogConfirm" onclick="(function(){const inp=document.getElementById('dialogInput').value;const inp2=document.getElementById('dialogInput2').value;const vis=document.getElementById('dialogInputWrap').style.display!=='none';_closeDialog(vis?{v1:inp,v2:inp2}:true)})()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="userSettingsModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">User Settings</div>
+    <div class="modal-sub">Update your profile details.</div>
+    <div class="field-group">
+      <label class="field-label">First Name</label>
+      <input class="field-input" id="settingsFirstName" placeholder="First name">
+    </div>
+    <div class="field-group" style="margin-top:8px">
+      <label class="field-label">Last Name</label>
+      <input class="field-input" id="settingsLastName" placeholder="Last name">
+    </div>
+    <div class="field-group" style="margin-top:8px">
+      <label class="field-label">Email</label>
+      <input class="field-input" id="settingsEmail" disabled style="opacity:0.5;cursor:not-allowed" title="Email cannot be changed">
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:'DM Mono',monospace">Email address cannot be changed.</div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:8px">Subscription</div>
+      <div id="settingsSubStatus" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-bottom:12px"></div>
+      <button id="subscribeBtn" class="btn btn-accent" style="font-size:11px;width:100%;display:none;margin-bottom:8px" onclick="document.getElementById('userSettingsModal').classList.remove('open');showPaywall('trial_limit')">Subscribe Now — A$30/month</button>
+      <button id="manageSubBtn" class="btn btn-ghost" style="font-size:11px;width:100%;display:none" onclick="manageSubscription()">Manage Subscription via Stripe</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('userSettingsModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-accent" onclick="saveUserSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEGAL PAGE ══ -->
+<div id="legalPage" style="display:none;position:fixed;inset:0;background:#0a0e13;z-index:99999;overflow-y:auto">
+  <!-- Header -->
+  <div style="background:#111720;border-bottom:1px solid #2a3447;padding:16px 40px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:10">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px;color:#dde8f5">
+      BACK<span style="color:#e8a020">PROP</span>
+    </div>
+    <div style="width:1px;height:20px;background:#2a3447"></div>
+    <div id="legalTitle" style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#7d8590"></div>
+    <button onclick="closeLegal()" style="margin-left:auto;background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border-radius:5px;cursor:pointer">← Back</button>
+  </div>
+  <!-- Content -->
+  <div style="max-width:720px;margin:0 auto;padding:48px 40px 8

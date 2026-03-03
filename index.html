@@ -1161,7 +1161,7 @@ header {
         </div>
         <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
         <div style="margin-top:20px;text-align:center;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace;line-height:1.8">
-          Need help? <a href="mailto:neil.williams@ikbeng.com" style="color:#7d8590;text-decoration:none">Contact support</a><br>
+          Need help? <a href="/cdn-cgi/l/email-protection#127c777b7e3c657b7e7e7b737f61527b7970777c753c717d7f" style="color:#7d8590;text-decoration:none">Contact support</a><br>
           <a href="#" onclick="openLegal('terms');return false;" style="color:#4a5568;text-decoration:none">Terms & Conditions</a> ·
           <a href="#" onclick="openLegal('privacy');return false;" style="color:#4a5568;text-decoration:none">Privacy Policy</a> ·
           <a href="#" onclick="openLegal('disclaimer');return false;" style="color:#4a5568;text-decoration:none">Disclaimer</a>
@@ -1575,7 +1575,7 @@ header {
 </div><!-- /app -->
 </div><!-- /appShell -->
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 
 // ════════════════════════════════════════════════
 //  SUPABASE CONFIG + AUTH
@@ -1605,7 +1605,10 @@ function setAuthMode(mode) {
   document.getElementById('tabSignin').style.color = isSignin ? '#dde8f5' : '#7d8590';
   document.getElementById('tabSignup').style.background = isSignup ? '#161e2a' : 'transparent';
   document.getElementById('tabSignup').style.color = isSignup ? '#dde8f5' : '#7d8590';
-  document.getElementById('authBtn').textContent = isReset ? 'Send Reset Link' : isSignin ? 'Sign In' : 'Create Account';
+  const _authBtn = document.getElementById('authBtn');
+  _authBtn.textContent = isReset ? 'Send Reset Link' : isSignin ? 'Sign In' : 'Create Account';
+  _authBtn.disabled = false;
+  _authBtn.onclick = handleAuth;
   document.getElementById('authError').style.display = 'none';
   document.getElementById('authMsg').style.display = 'none';
   // Back to sign in link
@@ -1828,6 +1831,8 @@ async function signOut() {
   await supa.auth.signOut();
   currentUser = null;
   projectStore = [];
+  const _sb = document.getElementById('authBtn');
+  if (_sb) { _sb.disabled = false; _sb.textContent = 'Sign In'; _sb.onclick = handleAuth; }
   document.getElementById('authScreen').style.display = 'flex';
   document.getElementById('projectListScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'none';
@@ -2711,11 +2716,11 @@ function getPropCap(propId, snapshot) {
 
 function setCalcMethod(method) {
   // Store as pending — applied and dirtied on Save
-  document.getElementById('methodBalancingBtn').dataset.pending = method;
   const balBtn = document.getElementById('methodBalancingBtn');
   const sharBtn = document.getElementById('methodSharingBtn');
   const desc = document.getElementById('methodDescription');
   if (!balBtn || !sharBtn || !desc) return;
+  balBtn.dataset.pending = method;
   if (method === 'balancing') {
     balBtn.style.border = '2px solid var(--accent)';
     balBtn.style.background = 'rgba(232,160,32,0.1)';
@@ -4200,10 +4205,4 @@ function updateDashWelcome() {
     <button onclick="closeLegal()" style="margin-left:auto;background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border-radius:5px;cursor:pointer">← Back</button>
   </div>
   <!-- Content -->
-  <div style="max-width:720px;margin:0 auto;padding:48px 40px 80px">
-    <div id="legalBody" style="font-family:'DM Mono',monospace;font-size:13px;color:#7d8590;line-height:1.9"></div>
-  </div>
-</div>
-
-</body>
-</html>
+  <div style="max-width:720px;margin:0 auto;padding:48px 40px 8

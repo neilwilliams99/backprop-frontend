@@ -2057,13 +2057,12 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
-  // Trial users limited to 1 project
-  const accessInfo = currentUser ? await checkAccess(currentUser) : null;
-  if (accessInfo && accessInfo.reason === 'trial' && projectStore.length >= 1) {
+  // Trial limit: check cached access reason rather than re-hitting the API
+  if (_cachedAccessReason === 'trial' && projectStore.length >= 1) {
     await dlgAlert(
       'Trial Limit Reached',
       'Free trial accounts are limited to 1 project. Subscribe to create unlimited projects.',
-      'Subscribe Now'
+      'OK'
     );
     showPaywall('trial_limit');
     return;
@@ -2073,6 +2072,7 @@ async function createProject() {
 
 let _newProjMethod = 'balancing';
 let _newProjPropVisible = false;
+let _cachedAccessReason = 'trial'; // set on login by showDashboardWithAccessCheck
 
 function openNewProjModal() {
   _newProjMethod = 'balancing';
@@ -3925,7 +3925,7 @@ function getTrialDaysLeft(user) {
 }
 
 async function checkAccess(user) {
-  // Admin accounts — full access bypasses all checks
+  // Admin accounts bypass all checks
   const ADMIN_IDS = ['b327a790-03b7-49ed-9795-8459168090f7'];
   if (ADMIN_IDS.includes(user.id)) return { access: true, reason: 'subscribed' };
   // First check trial period
@@ -4016,6 +4016,7 @@ async function startCheckout() {
 
 async function showDashboardWithAccessCheck(user) {
   const access = await checkAccess(user);
+  _cachedAccessReason = access.reason;
   if (!access.access) {
     showPaywall(access.reason);
     return;

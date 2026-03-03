@@ -1161,7 +1161,7 @@ header {
         </div>
         <div id="authMsg" style="display:none;margin-top:16px;text-align:center;font-size:11px;color:#38c96e;font-family:'DM Mono',monospace"></div>
         <div style="margin-top:20px;text-align:center;font-size:10px;color:#4a5568;font-family:'DM Mono',monospace;line-height:1.8">
-          Need help? <a href="mailto:neil.williams@ikbeng.com" style="color:#7d8590;text-decoration:none">Contact support</a><br>
+          Need help? <a href="/cdn-cgi/l/email-protection#1e707b77723069777272777f736d5e77757c7b7079307d7173" style="color:#7d8590;text-decoration:none">Contact support</a><br>
           <a href="#" onclick="openLegal('terms');return false;" style="color:#4a5568;text-decoration:none">Terms & Conditions</a> ·
           <a href="#" onclick="openLegal('privacy');return false;" style="color:#4a5568;text-decoration:none">Privacy Policy</a> ·
           <a href="#" onclick="openLegal('disclaimer');return false;" style="color:#4a5568;text-decoration:none">Disclaimer</a>
@@ -1575,7 +1575,7 @@ header {
 </div><!-- /app -->
 </div><!-- /appShell -->
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 
 // ════════════════════════════════════════════════
 //  SUPABASE CONFIG + AUTH
@@ -3920,6 +3920,10 @@ function getTrialDaysLeft(user) {
 }
 
 async function checkAccess(user) {
+  // Admin accounts — full access, no subscription required
+  const ADMIN_IDS = ['b327a790-03b7-49ed-9795-8459168090f7'];
+  if (ADMIN_IDS.includes(user.id)) return { access: true, reason: 'subscribed' };
+
   // First check trial period
   const trialDaysLeft = getTrialDaysLeft(user);
 
@@ -4200,10 +4204,4 @@ function updateDashWelcome() {
     <button onclick="closeLegal()" style="margin-left:auto;background:transparent;border:1px solid #2a3447;color:#dde8f5;font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border-radius:5px;cursor:pointer">← Back</button>
   </div>
   <!-- Content -->
-  <div style="max-width:720px;margin:0 auto;padding:48px 40px 80px">
-    <div id="legalBody" style="font-family:'DM Mono',monospace;font-size:13px;color:#7d8590;line-height:1.9"></div>
-  </div>
-</div>
-
-</body>
-</html>
+  <div style="max-width:720px;margin:0 auto;padding:48px 40px 8

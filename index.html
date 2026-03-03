@@ -1605,7 +1605,10 @@ function setAuthMode(mode) {
   document.getElementById('tabSignin').style.color = isSignin ? '#dde8f5' : '#7d8590';
   document.getElementById('tabSignup').style.background = isSignup ? '#161e2a' : 'transparent';
   document.getElementById('tabSignup').style.color = isSignup ? '#dde8f5' : '#7d8590';
-  document.getElementById('authBtn').textContent = isReset ? 'Send Reset Link' : isSignin ? 'Sign In' : 'Create Account';
+  const authBtnEl = document.getElementById('authBtn');
+  authBtnEl.textContent = isReset ? 'Send Reset Link' : isSignin ? 'Sign In' : 'Create Account';
+  authBtnEl.disabled = false;
+  authBtnEl.onclick = handleAuth;
   document.getElementById('authError').style.display = 'none';
   document.getElementById('authMsg').style.display = 'none';
   // Back to sign in link
@@ -1712,6 +1715,7 @@ async function handleAuth() {
     }
   }
   document.getElementById('authBtn').textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
+  document.getElementById('authBtn').disabled = false;
   // Clear password field after any attempt; clear email too on successful signup
   document.getElementById('authPassword').value = '';
   document.getElementById('authFirstName').value = '';
@@ -1825,6 +1829,9 @@ function closeLegal() {
 }
 
 async function signOut() {
+  // Reset auth button state before showing auth screen
+  const authBtnEl = document.getElementById('authBtn');
+  if (authBtnEl) { authBtnEl.disabled = false; authBtnEl.textContent = 'Sign In'; authBtnEl.onclick = handleAuth; }
   await supa.auth.signOut();
   currentUser = null;
   projectStore = [];

@@ -2725,11 +2725,11 @@ function getPropCap(propId, snapshot) {
 
 function setCalcMethod(method) {
   // Store as pending — applied and dirtied on Save
-  document.getElementById('methodBalancingBtn').dataset.pending = method;
   const balBtn = document.getElementById('methodBalancingBtn');
   const sharBtn = document.getElementById('methodSharingBtn');
   const desc = document.getElementById('methodDescription');
   if (!balBtn || !sharBtn || !desc) return;
+  balBtn.dataset.pending = method;
   if (method === 'balancing') {
     balBtn.style.border = '2px solid var(--accent)';
     balBtn.style.background = 'rgba(232,160,32,0.1)';

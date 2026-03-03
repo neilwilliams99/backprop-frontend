@@ -871,7 +871,7 @@ header {
   background: rgba(0,0,0,0.75);
   display: none;
   align-items: center; justify-content: center;
-  z-index: 500;
+  z-index: 1000;
   backdrop-filter: blur(6px);
 }
 .modal-overlay.open { display: flex; }
@@ -1255,166 +1255,7 @@ header {
 
 
 
-<!-- ══ NEW PROJECT MODAL ══ -->
-<div class="modal-overlay" id="newProjModal">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-title">New Project</div>
-    <div class="modal-sub">Enter project details to get started.</div>
 
-    <!-- Project details -->
-    <div class="proj-modal-grid" style="margin-bottom:14px">
-      <div class="field-group" style="grid-column:1/-1">
-        <label class="field-label">Project Name</label>
-        <input class="field-input" id="npName" placeholder="e.g. 123 Smith Street">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Job Number (optional)</label>
-        <input class="field-input" id="npJobNo" placeholder="e.g. 10354">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Prepared By (optional)</label>
-        <input class="field-input" id="npPrepBy" placeholder="e.g. NW">
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Calculation method -->
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
-    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="npMethodBalancingBtn" onclick="setNpMethod('balancing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Balancing
-        </button>
-        <button id="npMethodSharingBtn" onclick="setNpMethod('sharing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Sharing
-        </button>
-      </div>
-      <div id="npMethodDesc" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border)">
-        Load is distributed across slabs based on individual slab capacities. Traditional method.
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Optional prop -->
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:6px">Prop Library</div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:10px">Add your first prop now, or add props later via Project Settings.</div>
-    <div id="npPropFormWrap" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
-      <div class="proj-modal-grid">
-        <div class="field-group">
-          <label class="field-label">Type / Model</label>
-          <input class="field-input" id="npPropType" placeholder="e.g. Acrow #2">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Extension</label>
-          <input class="field-input" id="npPropExtension" placeholder="e.g. 2.0–3.4m">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Capacity (kN)</label>
-          <input class="field-input" type="number" id="npPropCapacity" placeholder="e.g. 22" step="0.5">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Notes (optional)</label>
-          <input class="field-input" id="npPropNotes" placeholder="Manufacturer, load case…">
-        </div>
-      </div>
-    </div>
-    <button id="npPropToggleBtn" class="btn btn-ghost" style="width:100%;margin-bottom:14px;font-size:11px" onclick="toggleNpPropForm()">+ Add a Prop</button>
-
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeNewProjModal()">Cancel</button>
-      <button class="btn btn-accent" onclick="submitNewProject()">Create Project</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ PROJECT SETTINGS MODAL ══ -->
-<div class="modal-overlay" id="projModal">
-  <div class="modal">
-    <div class="modal-title">Project Settings</div>
-    <div class="modal-sub">Configure project details and engineering parameters.</div>
-    <div class="proj-modal-grid">
-      <div class="field-group" style="grid-column:1/-1">
-        <label class="field-label">Project Name</label>
-        <input class="field-input" id="projName" value="Project 10354">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Job Number</label>
-        <input class="field-input" id="jobNo" value="10354">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Prepared By</label>
-        <input class="field-input" id="prepBy" value="">
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Engineering Parameters</div>
-    <div class="proj-modal-grid">
-      <div class="field-group">
-        <label class="field-label">Concrete density (kN/m³)</label>
-        <input class="field-input" id="concDensity" type="number" value="24" step="0.5">
-      </div>
-      <div class="field-group">
-        <label class="field-label">Max prop spacing (m)</label>
-        <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
-    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button id="methodBalancingBtn" onclick="setCalcMethod('balancing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Balancing
-        </button>
-        <button id="methodSharingBtn" onclick="setCalcMethod('sharing')"
-          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
-          Load Sharing
-        </button>
-      </div>
-      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border);min-height:48px;display:flex;align-items:center">
-        Load is distributed across slabs based on individual slab capacities. Traditional method.
-      </div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Prop Library</div>
-    <div id="projModalPropTable" style="margin-bottom:8px"></div>
-    <div id="projModalPropForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
-      <div style="font-size:11px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:10px" id="modalPropFormTitle">Add Prop</div>
-      <input type="hidden" id="modalPropEditId">
-      <div class="proj-modal-grid">
-        <div class="field-group">
-          <label class="field-label">Type / Model</label>
-          <input class="field-input" id="modalPropType" placeholder="e.g. Acrow #2">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Extension</label>
-          <input class="field-input" id="modalPropExtension" placeholder="e.g. 2.0–3.4m">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Capacity (kN)</label>
-          <input class="field-input" type="number" id="modalPropCapacity" placeholder="e.g. 22" step="0.5">
-        </div>
-        <div class="field-group">
-          <label class="field-label">Notes (optional)</label>
-          <input class="field-input" id="modalPropNotes" placeholder="Manufacturer, load case…">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="btn btn-accent" style="flex:1" onclick="saveModalProp()">Save Prop</button>
-        <button class="btn btn-ghost" onclick="clearModalPropForm()">Cancel</button>
-      </div>
-    </div>
-    <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="showModalPropForm()">+ Add Prop</button>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
-      <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══ APP ══ -->
 <div class="app">
@@ -2057,13 +1898,12 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
-  // Trial users limited to 1 project
-  const accessInfo = currentUser ? await checkAccess(currentUser) : null;
-  if (accessInfo && accessInfo.reason === 'trial' && projectStore.length >= 1) {
+  // Trial limit: check cached access reason rather than re-hitting the API
+  if (_cachedAccessReason === 'trial' && projectStore.length >= 1) {
     await dlgAlert(
       'Trial Limit Reached',
       'Free trial accounts are limited to 1 project. Subscribe to create unlimited projects.',
-      'Subscribe Now'
+      'OK'
     );
     showPaywall('trial_limit');
     return;
@@ -2073,6 +1913,7 @@ async function createProject() {
 
 let _newProjMethod = 'balancing';
 let _newProjPropVisible = false;
+let _cachedAccessReason = 'trial'; // set on login by showDashboardWithAccessCheck
 
 function openNewProjModal() {
   _newProjMethod = 'balancing';
@@ -3925,6 +3766,9 @@ function getTrialDaysLeft(user) {
 }
 
 async function checkAccess(user) {
+  // Admin accounts bypass all checks
+  const ADMIN_IDS = ['b327a790-03b7-49ed-9795-8459168090f7'];
+  if (ADMIN_IDS.includes(user.id)) return { access: true, reason: 'subscribed' };
   // First check trial period
   const trialDaysLeft = getTrialDaysLeft(user);
 
@@ -4013,6 +3857,7 @@ async function startCheckout() {
 
 async function showDashboardWithAccessCheck(user) {
   const access = await checkAccess(user);
+  _cachedAccessReason = access.reason;
   if (!access.access) {
     showPaywall(access.reason);
     return;
@@ -4142,6 +3987,169 @@ function updateDashWelcome() {
 </script>
 
 <!-- ══ CUSTOM DIALOG (replaces alert/confirm/prompt) ══ -->
+
+<!-- ══ NEW PROJECT MODAL ══ -->
+<div class="modal-overlay" id="newProjModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">New Project</div>
+    <div class="modal-sub">Enter project details to get started.</div>
+
+    <!-- Project details -->
+    <div class="proj-modal-grid" style="margin-bottom:14px">
+      <div class="field-group" style="grid-column:1/-1">
+        <label class="field-label">Project Name</label>
+        <input class="field-input" id="npName" placeholder="e.g. 123 Smith Street">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Number (optional)</label>
+        <input class="field-input" id="npJobNo" placeholder="e.g. 10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Prepared By (optional)</label>
+        <input class="field-input" id="npPrepBy" placeholder="e.g. NW">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Calculation method -->
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="npMethodBalancingBtn" onclick="setNpMethod('balancing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Balancing
+        </button>
+        <button id="npMethodSharingBtn" onclick="setNpMethod('sharing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Sharing
+        </button>
+      </div>
+      <div id="npMethodDesc" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border)">
+        Load is distributed across slabs based on individual slab capacities. Traditional method.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Optional prop -->
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:6px">Prop Library</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:10px">Add your first prop now, or add props later via Project Settings.</div>
+    <div id="npPropFormWrap" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
+      <div class="proj-modal-grid">
+        <div class="field-group">
+          <label class="field-label">Type / Model</label>
+          <input class="field-input" id="npPropType" placeholder="e.g. Acrow #2">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Extension</label>
+          <input class="field-input" id="npPropExtension" placeholder="e.g. 2.0–3.4m">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacity (kN)</label>
+          <input class="field-input" type="number" id="npPropCapacity" placeholder="e.g. 22" step="0.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes (optional)</label>
+          <input class="field-input" id="npPropNotes" placeholder="Manufacturer, load case…">
+        </div>
+      </div>
+    </div>
+    <button id="npPropToggleBtn" class="btn btn-ghost" style="width:100%;margin-bottom:14px;font-size:11px" onclick="toggleNpPropForm()">+ Add a Prop</button>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeNewProjModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="submitNewProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ PROJECT SETTINGS MODAL ══ -->
+<div class="modal-overlay" id="projModal">
+  <div class="modal">
+    <div class="modal-title">Project Settings</div>
+    <div class="modal-sub">Configure project details and engineering parameters.</div>
+    <div class="proj-modal-grid">
+      <div class="field-group" style="grid-column:1/-1">
+        <label class="field-label">Project Name</label>
+        <input class="field-input" id="projName" value="Project 10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Job Number</label>
+        <input class="field-input" id="jobNo" value="10354">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Prepared By</label>
+        <input class="field-input" id="prepBy" value="">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Engineering Parameters</div>
+    <div class="proj-modal-grid">
+      <div class="field-group">
+        <label class="field-label">Concrete density (kN/m³)</label>
+        <input class="field-input" id="concDensity" type="number" value="24" step="0.5">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Max prop spacing (m)</label>
+        <input class="field-input" id="maxSpacing" type="number" value="3.0" step="0.1">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Calculation Method</div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px">
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="methodBalancingBtn" onclick="setCalcMethod('balancing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--accent);background:rgba(232,160,32,0.1);color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Balancing
+        </button>
+        <button id="methodSharingBtn" onclick="setCalcMethod('sharing')"
+          style="flex:1;padding:8px 12px;border-radius:6px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;cursor:pointer">
+          Load Sharing
+        </button>
+      </div>
+      <div id="methodDescription" style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.6;padding:8px;background:var(--surface);border-radius:5px;border:1px solid var(--border);min-height:48px;display:flex;align-items:center">
+        Load is distributed across slabs based on individual slab capacities. Traditional method.
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px">Prop Library</div>
+    <div id="projModalPropTable" style="margin-bottom:8px"></div>
+    <div id="projModalPropForm" style="background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;display:none">
+      <div style="font-size:11px;font-weight:700;font-family:'Syne',sans-serif;margin-bottom:10px" id="modalPropFormTitle">Add Prop</div>
+      <input type="hidden" id="modalPropEditId">
+      <div class="proj-modal-grid">
+        <div class="field-group">
+          <label class="field-label">Type / Model</label>
+          <input class="field-input" id="modalPropType" placeholder="e.g. Acrow #2">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Extension</label>
+          <input class="field-input" id="modalPropExtension" placeholder="e.g. 2.0–3.4m">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Capacity (kN)</label>
+          <input class="field-input" type="number" id="modalPropCapacity" placeholder="e.g. 22" step="0.5">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Notes (optional)</label>
+          <input class="field-input" id="modalPropNotes" placeholder="Manufacturer, load case…">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-accent" style="flex:1" onclick="saveModalProp()">Save Prop</button>
+        <button class="btn btn-ghost" onclick="clearModalPropForm()">Cancel</button>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:12px" onclick="showModalPropForm()">+ Add Prop</button>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProjModal()">Cancel</button>
+      <button class="btn btn-accent" onclick="saveProjSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="customDialog" onclick="if(event.target===this)_closeDialog(null)">
   <div class="modal" style="width:400px">
     <div class="modal-title" id="dialogTitle"></div>

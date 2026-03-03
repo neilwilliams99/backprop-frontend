@@ -2057,6 +2057,7 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
+  console.log('[BP] createProject called, _cachedAccessReason=', _cachedAccessReason, 'projects=', projectStore.length);
   // Trial limit: check cached access reason rather than re-hitting the API
   if (_cachedAccessReason === 'trial' && projectStore.length >= 1) {
     await dlgAlert(
@@ -2067,7 +2068,9 @@ async function createProject() {
     showPaywall('trial_limit');
     return;
   }
+  console.log('[BP] calling openNewProjModal');
   openNewProjModal();
+  console.log('[BP] openNewProjModal returned');
 }
 
 let _newProjMethod = 'balancing';
@@ -2075,6 +2078,7 @@ let _newProjPropVisible = false;
 let _cachedAccessReason = 'trial'; // set on login by showDashboardWithAccessCheck
 
 function openNewProjModal() {
+  console.log('[BP] openNewProjModal start');
   _newProjMethod = 'balancing';
   _newProjPropVisible = false;
   const n = projectStore.length + 1;
@@ -2087,8 +2091,11 @@ function openNewProjModal() {
   document.getElementById('npPropNotes').value = '';
   document.getElementById('npPropFormWrap').style.display = 'none';
   document.getElementById('npPropToggleBtn').textContent = '+ Add a Prop';
+  console.log('[BP] calling setNpMethod');
   setNpMethod('balancing');
+  console.log('[BP] adding open class to newProjModal');
   document.getElementById('newProjModal').classList.add('open');
+  console.log('[BP] newProjModal classes:', document.getElementById('newProjModal').className);
   setTimeout(() => document.getElementById('npName').focus(), 50);
 }
 
@@ -2097,11 +2104,13 @@ function closeNewProjModal() {
 }
 
 function setNpMethod(method) {
+  console.log('[BP] setNpMethod called with:', method);
   _newProjMethod = method;
   const balBtn = document.getElementById('npMethodBalancingBtn');
   const sharBtn = document.getElementById('npMethodSharingBtn');
   const desc = document.getElementById('npMethodDesc');
-  if (!balBtn || !sharBtn || !desc) return;
+  console.log('[BP] setNpMethod elements:', !!balBtn, !!sharBtn, !!desc);
+  if (!balBtn || !sharBtn || !desc) { console.error('[BP] setNpMethod: missing elements!'); return; }
   if (method === 'balancing') {
     balBtn.style.border = '2px solid var(--accent)';
     balBtn.style.background = 'rgba(232,160,32,0.1)';

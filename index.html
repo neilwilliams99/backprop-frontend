@@ -2059,18 +2059,25 @@ async function dbSaveProject(p) {
 }
 
 async function createProject() {
-  // Trial users limited to 1 project
-  const accessInfo = currentUser ? await checkAccess(currentUser) : null;
-  if (accessInfo && accessInfo.reason === 'trial' && projectStore.length >= 1) {
-    await dlgAlert(
-      'Trial Limit Reached',
-      'Free trial accounts are limited to 1 project. Subscribe to create unlimited projects.',
-      'Subscribe Now'
-    );
-    showPaywall('trial_limit');
-    return;
+  // Show loading state on the new project card while checking access
+  const newCard = document.querySelector('.proj-card-new');
+  if (newCard) { newCard.style.opacity = '0.5'; newCard.style.pointerEvents = 'none'; }
+  try {
+    // Trial users limited to 1 project
+    const accessInfo = currentUser ? await checkAccess(currentUser) : null;
+    if (accessInfo && accessInfo.reason === 'trial' && projectStore.length >= 1) {
+      await dlgAlert(
+        'Trial Limit Reached',
+        'Free trial accounts are limited to 1 project. Subscribe to create unlimited projects.',
+        'Subscribe Now'
+      );
+      showPaywall('trial_limit');
+      return;
+    }
+    openNewProjModal();
+  } finally {
+    if (newCard) { newCard.style.opacity = ''; newCard.style.pointerEvents = ''; }
   }
-  openNewProjModal();
 }
 
 let _newProjMethod = 'balancing';
@@ -3934,14 +3941,17 @@ async function checkAccess(user) {
   // First check trial period
   const trialDaysLeft = getTrialDaysLeft(user);
 
-  // Then check subscription status from API
+  // Then check subscription status from API — 8s timeout to avoid hanging UI
   try {
-    const res = await fetch(`${API_URL}/subscription-status?user_id=${user.id}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(`${API_URL}/subscription-status?user_id=${user.id}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data = await res.json();
     if (data.access) return { access: true, reason: 'subscribed' };
   } catch(e) {
-    console.warn('Subscription check failed, falling back to trial', e);
-    // If API is down, fall back to trial grace — don't lock users out
+    console.warn('Subscription check failed or timed out, falling back to trial', e);
+    // If API is down or slow, fall back to trial grace — don't lock users out
     if (trialDaysLeft > 0) return { access: true, reason: 'trial', daysLeft: Math.ceil(trialDaysLeft) };
   }
 

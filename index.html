@@ -3224,8 +3224,8 @@ function renderEngineerView() {
       return `<td class="${label === '—' ? 'cell-empty' : 'cell-ok'}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(label)}">${esc(label)}</td>`;
     });
 
-  // ── 3. Cumulative Load ───────────────────────────────────────────────────────
-  matHtml += matBlock('Cumulative Load','kPa','Cumulative wet load at each level. Red = unresolved load (Fail)',
+  // ── 3. Propping Load ────────────────────────────────────────────────────────
+  matHtml += matBlock('Propping Load','kPa','Load the props at each level must carry. Red = unresolved load (Fail)',
     (r, levelName) => {
       if (r.levelName === levelName) return `<td class="cell-wet">${r.totalLoad.toFixed(2)}</td>`;
       const entry = r.levels.find(l => l.name === levelName);
@@ -3607,13 +3607,13 @@ async function exportResults() {
     return entry.propType || '';
   }), 'PROP TYPE');
 
-  // ── 3. Cumulative Load ─────────────────────────────────────────────────────
-  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Cumulative Load (kPa)', (r, lvl, entry, isWet, isGround) => {
+  // ── 3. Propping Load ───────────────────────────────────────────────────────
+  XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Propping Load (kPa)', (r, lvl, entry, isWet, isGround) => {
     if (isWet) return 'WET';
     if (isGround) return entry ? parseFloat((entry.cumulativeLoad||0).toFixed(2)) : '';
     if (!entry) return '';
     return parseFloat((entry.cumulativeLoad||0).toFixed(2));
-  }), 'CUMULATIVE LOAD');
+  }), 'PROPPING LOAD');
 
   // ── 4. Slab Capacity ───────────────────────────────────────────────────────
   XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Slab Capacity (kPa)', (r, lvl, entry, isWet, isGround) => {

@@ -2893,27 +2893,34 @@ function runCalc() {
             pourResult.isNP = true;
             pourResult.failReason = `Load sharing % must sum to 100% (currently ${pctSum.toFixed(0)}%). Edit zone distribution values.`;
           } else {
-            // Pass 1: check all slab capacities
-            let runLoad = totalWetLoad;
+            // Load Sharing logic per spreadsheet model:
+            // - slabShare  = totalWetLoad × distPct%   (apportioned from wet load only)
+            // - slabTotal  = slabShare + addLoad        (what this slab must carry)
+            // - loadDown   = previous loadDown - slabTotal (prop design load below this slab)
+            // Capacity check is against slabTotal.
+            // Prop spacing is sized for loadDown (load the props below must carry).
+
             const levelChecks = [];
             let allPass = true;
+            let loadDown = totalWetLoad; // starts as full wet load, reduces as slabs absorb
 
             activeBelowEntries.forEach(bl => {
               const blev = levels.find(l => l.id === bl.levelId);
               if (!blev) return;
-              const levelAddLoad = bl.addLoad ?? 0;
-              const totalAtLevel = runLoad + levelAddLoad;
-              const pct = (bl.distPct ?? 0) / 100;
-              const slabShare = totalAtLevel * pct;
-              const capPass = isBaseLevel(blev) || bl.slabCap >= slabShare;
+              const isGndLevel = isBaseLevel(blev);
+              const pct = isGndLevel ? 0 : (bl.distPct ?? 0) / 100;
+              const levelAddLoad = isGndLevel ? 0 : (bl.addLoad ?? 0);
+              const slabShare = totalWetLoad * pct;           // apportioned wet load
+              const slabTotal = slabShare + levelAddLoad;     // total load this slab carries
+              const loadDownPrev = loadDown;
+              loadDown = Math.max(0, loadDown - slabTotal);   // load passed to props below
+              const capPass = isGndLevel || bl.slabCap >= slabTotal;
               if (!capPass) allPass = false;
-              levelChecks.push({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn: runLoad });
-              runLoad = totalAtLevel - slabShare;
+              levelChecks.push({ bl, blev, isGndLevel, pct, slabShare, slabTotal, loadDownPrev, loadDown, capPass });
             });
 
-            // Pass 2: if all slabs pass, calc prop spacings; otherwise all fail
-            levelChecks.forEach(({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn }) => {
-              const isGndLevel = isBaseLevel(blev);
+            // Pass 2: prop spacings (only if all caps pass)
+            levelChecks.forEach(({ bl, blev, isGndLevel, pct, slabShare, slabTotal, loadDownPrev, loadDown, capPass }) => {
               const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
               if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}.`; return; }
 
@@ -2921,15 +2928,14 @@ function runCalc() {
               let status = '';
 
               if (!allPass) {
-                // Any slab failed — no spacings
                 status = capPass ? 'Cap OK' : 'Fail';
-                propSpacing = null;
                 if (!capPass) pourResult.isNP = true;
+              } else if (isGndLevel) {
+                status = 'Ground';
               } else {
-                // All caps pass — prop spacing = sqrt(propCap / cumulativeLoad at this level)
-                // cumulativeLoad = totalAtLevel = runLoad arriving + addLoad at this level
-                if (totalAtLevel > 0.001) {
-                  const rawSpacing = Math.sqrt(propCapKN / totalAtLevel);
+                // Props below this slab carry loadDown (load passed through)
+                if (loadDownPrev > 0.001) {
+                  const rawSpacing = Math.sqrt(propCapKN / loadDownPrev);
                   propSpacing = Math.min(rawSpacing, maxSp);
                   status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
                   if (propSpacing <= 0) pourResult.isNP = true;
@@ -2940,12 +2946,13 @@ function runCalc() {
 
               pourResult.levels.push({
                 name: blev.name, isGround: isGndLevel,
-                cumulativeLoad: runLoadIn,
+                cumulativeLoad: loadDownPrev,   // load arriving at this level from above
                 capacity: isGndLevel ? null : bl.slabCap,
-                distPct: Math.round((pct * 100) * 100) / 100,
+                distPct: Math.round(pct * 10000) / 100,
                 slabShare: Math.round(slabShare * 100) / 100,
+                slabTotal: Math.round(slabTotal * 100) / 100,
                 propCap: propCapKN,
-                netLoad: Math.max(0, totalAtLevel - slabShare),
+                netLoad: Math.round(loadDown * 100) / 100,    // load passed down
                 status, propSpacing,
                 propId: bl.propId,
               });

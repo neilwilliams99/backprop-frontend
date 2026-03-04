@@ -2963,18 +2963,22 @@ function runCalc() {
 
         if (reachesGround) {
           // ── CASE A: T/G ─────────────────────────────────────────────────
-          // Every level in the stack (including intermediates) props the FULL
-          // wet load. Ground slab is recorded as T/G with no prop spacing.
+          // Every level props the cumulative load (wet load + addLoad from each level).
           pourResult.isTG = true;
+          let tgCumLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
             const blev = levels.find(l => l.id === bl.levelId);
             if (!blev) return;
             const isGndLevel = isBaseLevel(blev);
 
+            // Accumulate addLoad from each intermediate level
+            const levelAddLoad = isGndLevel ? 0 : (bl.addLoad ?? 0);
+            tgCumLoad = tgCumLoad + levelAddLoad;
+
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
-            const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
+            const propSpacing = Math.sqrt(propCapKN / tgCumLoad);
             const cappedSpacing = Math.min(propSpacing, maxSp);
             const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
             if (status === 'Fail') pourResult.isNP = true;
@@ -2982,10 +2986,10 @@ function runCalc() {
             pourResult.levels.push({
               name: blev.name,
               isGround: isGndLevel,
-              cumulativeLoad: totalWetLoad,
+              cumulativeLoad: tgCumLoad,
               capacity: isGndLevel ? null : bl.slabCap,
               propCap: propCapKN,
-              netLoad: isGndLevel ? 0 : totalWetLoad,
+              netLoad: isGndLevel ? 0 : tgCumLoad,
               status,
               propSpacing: cappedSpacing > 0 ? cappedSpacing : null,
               propId: bl.propId,
@@ -2999,6 +3003,10 @@ function runCalc() {
           activeBelowEntries.forEach(bl => {
             const blev = levels.find(l => l.id === bl.levelId);
             if (!blev) return;
+
+            // Add construction load from this prop level to running load
+            const levelAddLoad = isBaseLevel(blev) ? 0 : (bl.addLoad ?? 0);
+            cumLoad = cumLoad + levelAddLoad;
 
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }

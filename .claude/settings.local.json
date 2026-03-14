@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"\nconst fs = require\\('fs'\\);\nconst content = fs.readFileSync\\('C:/Users/neilw/Projects/backprop-frontend/index.html', 'utf8'\\);\n// Find line 1419 \\(the script data-cfasync tag\\)\nconst lines = content.split\\('\\\\n'\\);\n// Find where body starts \\(after </head>\\)\nfor\\(let i=1037; i<1045; i++\\) {\n  console.log\\(i+1, JSON.stringify\\(lines[i]\\)\\);\n}\n\")",
+      "Bash(node -e \"\nconst fs = require\\('fs'\\);\nconst content = fs.readFileSync\\('C:/Users/neilw/Projects/backprop-frontend/index.html', 'utf8'\\);\nconst lines = content.split\\('\\\\n'\\);\n// Find the script tag line \\(line 1419\\)\nfor\\(let i=1417; i<1424; i++\\) {\n  console.log\\(i+1, JSON.stringify\\(lines[i].substring\\(0, 120\\)\\)\\);\n}\n\")",
+      "Bash(node -e \"\nconst fs = require\\('fs'\\);\nconst content = fs.readFileSync\\('C:/Users/neilw/Projects/backprop-frontend/index.html', 'utf8'\\);\nconst lines = content.split\\('\\\\n'\\);\n// Find end of script block\nfor\\(let i=3984; i<3993; i++\\) {\n  console.log\\(i+1, JSON.stringify\\(lines[i].substring\\(0, 120\\)\\)\\);\n}\n\")",
+      "Bash(cd \"C:\\\\Users\\\\neilw\\\\Projects\\\\backprop-frontend\" && wc -l index.html css/*.css js/*.js | sort -rn | head -30)",
+      "Bash(cd \"C:\\\\Users\\\\neilw\\\\Projects\\\\backprop-frontend\" && wc -l index.html css/*.css js/*.js | tail -1)"
+    ]
+  }
+}

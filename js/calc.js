@@ -1,7 +1,58 @@
 // ════════════════════════════════════════════════
+//  LOAD SHARING ENGINE
+// ════════════════════════════════════════════════
+//
+// Cascade model for load sharing across back-propped levels.
+//
+// Core formula:
+//   wet_share     = wetTotal × (distPct / 100)
+//   slab_load     = wet_share + addLoad   (slab design load)
+//   prop_load_in  = load arriving from above (design load for prop spacing)
+//   prop_load_out = prop_load_in − wet_share          (not-propped-to-ground)
+//                 = prop_load_in + addLoad             (propped-to-ground, wet_share = 0)
+//
+// Not Propped to Ground:
+//   distPct is user-defined per level (must sum to 100 %).  Each slab absorbs
+//   its wet_share, reducing the cascade.  addLoad is local to the slab design
+//   check and does not accumulate in the cascade.
+//
+// Propped to Ground:
+//   distPct forced to 0, so wet_share = 0.  The slab absorbs nothing; addLoad
+//   at each level flows directly into the props and accumulates in the cascade.
+//
+// @param {number}  wetTotal          – wet slab total: slabLoad + addLoad (kPa)
+// @param {Array}   supportingLevels  – top-to-bottom; each entry: { addLoad, distPct }
+// @param {boolean} proppedToGround
+// @returns {Array} one object per supporting level:
+//   { prop_load_in, wet_share, slab_load, prop_load_out }
+//
+function computeLoadSharing(wetTotal, supportingLevels, proppedToGround) {
+  const results = [];
+  let prop_load_in = wetTotal;
+
+  supportingLevels.forEach(level => {
+    const add_load  = level.addLoad ?? 0;
+    const dist_pct  = proppedToGround ? 0 : (level.distPct ?? 0);
+    const wet_share = wetTotal * (dist_pct / 100);
+    const slab_load = wet_share + add_load;
+
+    const prop_load_out = proppedToGround
+      ? prop_load_in + add_load          // add_load accumulates; nothing absorbed by slab
+      : prop_load_in - wet_share;        // slab absorbs wet_share; add_load stays local
+
+    results.push({ prop_load_in, wet_share, slab_load, prop_load_out });
+
+    prop_load_in = prop_load_out;
+  });
+
+  return results;
+}
+
+// ════════════════════════════════════════════════
 //  CALCULATION ENGINE
 // ════════════════════════════════════════════════
-function runCalc() {
+function runCalc(opts = {}) {
+  const silent = opts.silent === true;
   const density = project.concDensity;
   const maxSp = project.maxSpacing;
   const results = [];
@@ -32,7 +83,7 @@ function runCalc() {
 
   if (missingPropZones.length > 0) {
     const unique = [...new Set(missingPropZones)];
-    showToast(
+    if (!silent) showToast(
       `Cannot calculate — no prop assigned in: ${unique.join(', ')}. Open each zone and select a prop for all active levels.`,
       'error'
     );
@@ -42,7 +93,7 @@ function runCalc() {
   // Check 3: at least one level with zones must exist
   const levelsWithZones = levels.filter(l => !isBaseLevel(l) && l.zones.length > 0);
   if (levelsWithZones.length === 0) {
-    showToast('Cannot calculate — no zones defined. Add zones to at least one level first.', 'error');
+    if (!silent) showToast('Cannot calculate — no zones defined. Add zones to at least one level first.', 'error');
     return;
   }
 
@@ -72,7 +123,7 @@ function runCalc() {
       });
     });
     if (badZones.length > 0) {
-      showToast(`Cannot calculate — distribution % must sum to 100% in: ${badZones.join(', ')}. Open each zone and correct the values.`, 'error');
+      if (!silent) showToast(`Cannot calculate — distribution % must sum to 100% in: ${badZones.join(', ')}. Open each zone and correct the values.`, 'error');
       return;
     }
   }
@@ -131,111 +182,110 @@ function runCalc() {
         pourResult.failReason = 'No load-bearing levels selected.';
       } else if (useSharing) {
         // ── CASE C: LOAD SHARING ─────────────────────────────────────────
-        // Each slab attracts its nominated % of the running load+addLoad.
-        // Props at each level are sized for the load passed DOWN.
-        // All slab capacity checks must pass before any spacings are shown.
+        // Uses computeLoadSharing() for both T/G and non-T/G paths.
+        //
+        // Not Propped to Ground: each slab absorbs its nominated % of the
+        //   wet slab total.  All slab capacity checks must pass before prop
+        //   spacings are shown.
+        //
+        // Propped to Ground (T/G): distribution_pct forced to 0 everywhere;
+        //   the full wet load accumulates level-by-level down to the ground.
 
         const reachesGround = activeBelowEntries.some(b => {
           const bl = levels.find(l => l.id === b.levelId);
           return bl && isBaseLevel(bl);
         });
+        pourResult.isTG = reachesGround;
 
-        if (reachesGround) {
-          pourResult.isTG = true;
-          // T/G in load sharing: distribution boxes are 0%, all load to ground
-          // Props at every level carry the full running load
-          activeBelowEntries.forEach(bl => {
-            const blev = levels.find(l => l.id === bl.levelId);
-            if (!blev) return;
-            const isGndLevel = isBaseLevel(blev);
-            const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
-            if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}.`; return; }
-            const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
-            const cappedSpacing = Math.min(propSpacing, maxSp);
-            const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
-            if (status === 'Fail') pourResult.isNP = true;
-            pourResult.levels.push({
-              name: blev.name, isGround: isGndLevel,
-              cumulativeLoad: totalWetLoad,
-              capacity: isGndLevel ? null : bl.slabCap,
-              distPct: 0, slabShare: 0,
-              propCap: propCapKN,
-              netLoad: isGndLevel ? 0 : totalWetLoad,
-              status, propSpacing: cappedSpacing > 0 ? cappedSpacing : null,
-              propId: bl.propId,
-            });
-          });
-        } else {
-          // Validate % sum = 100 for non-ground entries
-          const nonGndEntries = activeBelowEntries.filter(b => {
-            const bl = levels.find(l => l.id === b.levelId);
-            return bl && !isBaseLevel(bl);
-          });
-          const pctSum = nonGndEntries.reduce((s, b) => s + (b.distPct ?? 0), 0);
+        if (!reachesGround) {
+          // Guard: % sum must equal 100 (pre-flight already checked globally;
+          // this is a per-zone safety net).
+          const pctSum = activeBelowEntries.reduce((s, b) => s + (b.distPct ?? 0), 0);
           if (Math.abs(pctSum - 100) > 0.5) {
             pourResult.isNP = true;
             pourResult.failReason = `Load sharing % must sum to 100% (currently ${pctSum.toFixed(0)}%). Edit zone distribution values.`;
-          } else {
-            // Pass 1: check all slab capacities
-            let runLoad = totalWetLoad;
-            const levelChecks = [];
-            let allPass = true;
-
-            activeBelowEntries.forEach(bl => {
-              const blev = levels.find(l => l.id === bl.levelId);
-              if (!blev) return;
-              const levelAddLoad = bl.addLoad ?? 0;
-              const totalAtLevel = runLoad + levelAddLoad;
-              const pct = (bl.distPct ?? 0) / 100;
-              const slabShare = totalAtLevel * pct;
-              const capPass = isBaseLevel(blev) || bl.slabCap >= slabShare;
-              if (!capPass) allPass = false;
-              levelChecks.push({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn: runLoad });
-              runLoad = totalAtLevel - slabShare;
-            });
-
-            // Pass 2: if all slabs pass, calc prop spacings; otherwise all fail
-            levelChecks.forEach(({ bl, blev, totalAtLevel, slabShare, pct, capPass, runLoadIn }) => {
-              const isGndLevel = isBaseLevel(blev);
-              const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
-              if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}.`; return; }
-
-              let propSpacing = null;
-              let status = '';
-
-              if (!allPass) {
-                // Any slab failed — no spacings
-                status = capPass ? 'Cap OK' : 'Fail';
-                propSpacing = null;
-                if (!capPass) pourResult.isNP = true;
-              } else {
-                // All caps pass — prop spacing = sqrt(propCap / cumulativeLoad at this level)
-                // cumulativeLoad = totalAtLevel = runLoad arriving + addLoad at this level
-                if (totalAtLevel > 0.001) {
-                  const rawSpacing = Math.sqrt(propCapKN / totalAtLevel);
-                  propSpacing = Math.min(rawSpacing, maxSp);
-                  status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
-                  if (propSpacing <= 0) pourResult.isNP = true;
-                } else {
-                  status = 'no load';
-                }
-              }
-
-              pourResult.levels.push({
-                name: blev.name, isGround: isGndLevel,
-                cumulativeLoad: runLoadIn,
-                capacity: isGndLevel ? null : bl.slabCap,
-                distPct: Math.round((pct * 100) * 100) / 100,
-                slabShare: Math.round(slabShare * 100) / 100,
-                propCap: propCapKN,
-                netLoad: Math.max(0, totalAtLevel - slabShare),
-                status, propSpacing,
-                propId: bl.propId,
-              });
-            });
-
-            pourResult.isTG = false;
           }
+        }
+
+        if (!pourResult.isNP) {
+          // ── Run the cascade engine ──────────────────────────────────────
+          const supportInputs = activeBelowEntries.map(bl => ({
+            addLoad: bl.addLoad ?? 0,
+            distPct: bl.distPct ?? 0,
+          }));
+          const sharingCalc = computeLoadSharing(totalWetLoad, supportInputs, reachesGround);
+
+          // Pass 1 (non-TG only): check every slab can carry its slab_load.
+          // If any slab fails, all spacings are suppressed.
+          let allCapsPass = true;
+          if (!reachesGround) {
+            activeBelowEntries.forEach((bl, i) => {
+              const calc = sharingCalc[i];
+              const blev = levels.find(l => l.id === bl.levelId);
+              if (!blev || isBaseLevel(blev)) return;
+              if ((bl.slabCap ?? 0) < calc.slab_load) allCapsPass = false;
+            });
+          }
+
+          // Pass 2: build per-level output; prop spacing uses prop_load_in
+          activeBelowEntries.forEach((bl, i) => {
+            const calc  = sharingCalc[i];
+            const blev  = levels.find(l => l.id === bl.levelId);
+            if (!blev) return;
+            const isGndLevel = isBaseLevel(blev);
+
+            const propCapKN = bl.propCapOverride !== null
+              ? bl.propCapOverride
+              : getPropCap(bl.propId, bl.propSnapshot);
+            if (!propCapKN) {
+              pourResult.isNP = true;
+              pourResult.failReason = `No prop capacity set at ${blev.name}.`;
+              return;
+            }
+
+            let propSpacing = null;
+            let status      = '';
+
+            if (isGndLevel) {
+              // Ground slab: terminal anchor — no prop sizing needed
+              status = 'T/G';
+            } else if (!reachesGround && !allCapsPass) {
+              // At least one slab failed — show cap pass/fail, no spacings
+              const capPass = (bl.slabCap ?? 0) >= calc.slab_load;
+              status = capPass ? 'Cap OK' : 'Fail';
+              if (!capPass) pourResult.isNP = true;
+            } else {
+              // Size props for prop_load_in: load arriving at this level from above
+              if (calc.prop_load_in > 0.001) {
+                const rawSpacing = Math.sqrt(propCapKN / calc.prop_load_in);
+                propSpacing = Math.min(rawSpacing, maxSp);
+                status = propSpacing > 0 ? propSpacing.toFixed(2) + 'm' : 'Fail';
+                if (propSpacing <= 0) pourResult.isNP = true;
+              } else {
+                status = 'no load';
+              }
+            }
+
+            pourResult.levels.push({
+              name:     blev.name,
+              isGround: isGndLevel,
+
+              // ── Cascade columns ────────────────────────────────────────
+              cumulativeLoad: calc.prop_load_in,   // load arriving at this level (for display)
+              wetShare:       calc.wet_share,
+              slabShare:      Math.round(calc.slab_load * 100) / 100,
+              propLoad:       calc.prop_load_in,
+
+              // ── Fields used by rendering code ─────────────────────────
+              capacity:  isGndLevel ? null : (bl.slabCap ?? null),
+              distPct:   reachesGround ? 0 : (bl.distPct ?? 0),
+              propCap:   propCapKN,
+              netLoad:   isGndLevel ? 0 : Math.max(0, calc.prop_load_in),
+              status,
+              propSpacing,
+              propId: bl.propId,
+            });
+          });
         }
       } else {
         // Determine if stack reaches ground
@@ -344,10 +394,14 @@ function runCalc() {
   calcResults = results;
   renderEngineerView();
   renderBuilderView();
-  showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''} · saved`, 'success');
+  if (!silent) {
+    showToast(`Calculation complete — ${results.length} pour scenario${results.length !== 1 ? 's' : ''} · saved`, 'success');
+  }
   updateSummary();
   updateCalcBtn();
-  // Save results to database
-  const activeP = projectStore.find(x => x.id === activeProjectId);
-  if (activeP) { saveActiveProject(); dbSaveProject(activeP); }
+  // Save results to database (skip on silent auto-recalc at project open)
+  if (!silent) {
+    const activeP = projectStore.find(x => x.id === activeProjectId);
+    if (activeP) { saveActiveProject(); dbSaveProject(activeP); }
+  }
 }

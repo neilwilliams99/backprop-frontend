@@ -207,13 +207,19 @@ function openProject(id) {
   activeProjectId = id;
   project     = p.project;
   levels      = p.levels;
-  calcResults = p.calcResults;
+  calcResults = null; // always start fresh — recalculate below rather than rendering stale saved results
   document.getElementById('headerProjName').textContent = project.name;
   document.getElementById('headerJobNo').textContent    = project.jobNo;
   document.getElementById('projectListScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'block';
   showPage('levels');
-  updateCalcBtn();
+  if (p.calcResults) {
+    // Project had prior results — silently recalculate from inputs so the
+    // display always reflects the current calculation logic, not saved data.
+    runCalc({ silent: true });
+  } else {
+    updateCalcBtn();
+  }
 }
 
 function saveActiveProject() {

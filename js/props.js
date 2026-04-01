@@ -70,6 +70,10 @@ function saveModalProp() {
     const idx = getProps().findIndex(p => p.id === editId);
     if (idx >= 0) {
       getProps()[idx] = { ...getProps()[idx], type, extension: ext, capacity: cap, notes };
+      // Refresh snapshots on any zone levelsBelow entries that reference this prop
+      levels.forEach(lev => (lev.zones || []).forEach(zone => (zone.levelsBelow || []).forEach(bl => {
+        if (bl.propId === editId) bl.propSnapshot = { type, capacity: cap };
+      })));
       showToast('Prop updated', 'success');
     }
   } else {
@@ -80,7 +84,7 @@ function saveModalProp() {
   clearModalPropForm();
   renderModalPropTable();
   reconcilePropIds();
-  markDirty();
+  if (editId) runCalc(); else markDirty();
   // Refresh zone dropdowns if zones page is currently open
   if (currentZoneLevelId) {
     const lev = levels.find(l => l.id === currentZoneLevelId);

@@ -80,6 +80,30 @@ function renderEngineerView() {
     return prop ? prop.type : '—';
   }
 
+  // helper: build rich tooltip for the Prop Type matrix cell
+  function getPropTooltip(r, levelName) {
+    const lev = levels.find(l => l.id === r.levelId);
+    if (!lev) return null;
+    const zone = r.zoneId ? lev.zones.find(z => z.id === r.zoneId) : lev.zones.find(z => z.name === r.zoneName);
+    if (!zone) return null;
+    const bl = zone.levelsBelow.find(b => {
+      const bl2 = levels.find(l => l.id === b.levelId);
+      return bl2 && bl2.name === levelName;
+    });
+    if (!bl || !bl.active) return null;
+    const type     = bl.propSnapshot ? bl.propSnapshot.type : (getProps().find(p => p.id === bl.propId) || {}).type;
+    const capacity = bl.propCapOverride != null
+      ? bl.propCapOverride
+      : (bl.propSnapshot ? bl.propSnapshot.capacity : null) ?? (getProps().find(p => p.id === bl.propId) || {}).capacity;
+    const libProp  = getProps().find(p => p.id === bl.propId);
+    const extension = libProp ? libProp.extension : null;
+    const parts = [];
+    if (type)         parts.push(type);
+    if (capacity != null) parts.push(`${capacity} kN`);
+    if (extension)    parts.push(`${extension} m`);
+    return parts.length ? parts.join(' · ') : null;
+  }
+
   // helper: get slab capacity for a zone/level entry
   function getSlabCap(r, levelName) {
     const entry = r.levels.find(l => l.name === levelName);
@@ -94,7 +118,7 @@ function renderEngineerView() {
     const levId = lev ? lev.id : null;
     const linkStart = levId ? `<a onclick="showPage('levels');openZones('${levId}')" style="cursor:pointer;color:var(--accent);text-decoration:none" title="Edit zones for ${esc(r.levelName)}">` : '<span>';
     const linkEnd = levId ? '</a>' : '</span>';
-    return `<th class="col-pour">${linkStart}${esc(r.levelName)}<br><span style="font-weight:400;font-size:9px;color:var(--text-muted)">${esc(r.zoneName)}</span>${linkEnd}</th>`;
+    return `<th class="col-pour">${linkStart}${esc(r.levelName)}<br><span style="font-weight:400;font-size:9px;color:var(--text-muted);text-transform:none">${r.thickness}mm</span><br><span style="font-weight:400;font-size:9px;color:var(--text-muted)">${esc(r.zoneName)}</span>${linkEnd}</th>`;
   }).join('');
 
   // ── Matrices side-by-side wrapper ─────────────────────────────────────────
@@ -134,8 +158,9 @@ function renderEngineerView() {
       if (r.levelName === levelName) return `<td class="cell-wet">WET</td>`;
       const entry = r.levels.find(l => l.name === levelName);
       if (!entry) return `<td class="cell-empty">—</td>`;
-      const label = getPropLabel(r, levelName);
-      return `<td class="${label === '—' ? 'cell-empty' : 'cell-ok'}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(label)}">${esc(label)}</td>`;
+      const label   = getPropLabel(r, levelName);
+      const tooltip = getPropTooltip(r, levelName) || label;
+      return `<td class="${label === '—' ? 'cell-empty' : 'cell-ok'}" style="max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px" title="${esc(tooltip)}">${esc(label)}</td>`;
     });
 
   // ── 3. Cumulative Load ───────────────────────────────────────────────────────

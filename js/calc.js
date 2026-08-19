@@ -264,10 +264,7 @@ function runCalc(opts = {}) {
             let propSpacing = null;
             let status      = '';
 
-            if (isGndLevel) {
-              // Ground slab: terminal anchor — no prop sizing needed
-              status = 'T/G';
-            } else if (!reachesGround && !allCapsPass) {
+            if (!reachesGround && !allCapsPass) {
               // At least one slab failed — show cap pass/fail, no spacings
               const capPass = (bl.slabCap ?? 0) >= calc.slab_load;
               status = capPass ? 'Cap OK' : 'Fail';

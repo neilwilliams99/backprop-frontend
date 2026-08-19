@@ -44,7 +44,6 @@ async function exportResults() {
   // ── 1. Prop Spacing ────────────────────────────────────────────────────────
   XLSX.utils.book_append_sheet(wb, makeMatrixSheet('Prop Spacing (m c/c)', (r, lvl, entry, isWet, isGround) => {
     if (isWet) return 'WET';
-    if (isGround) return '∞';
     if (!entry) return '';
     if (entry.propSpacing === null || entry.propSpacing === undefined) return entry.isTG ? 'TG' : '';
     return parseFloat(entry.propSpacing.toFixed(2));

@@ -4,45 +4,59 @@
 //
 // Cascade model for load sharing across back-propped levels.
 //
-// Core formula:
+// The wet load travelling down the stack is shared between slabs in proportion
+// to the % nominated at each level.  A level's additional load is then applied
+// AT that level — it joins the prop design load there, and is charged against
+// that level's slab capacity.
+//
+// Core formula (one slab check, one switch on what carries down):
 //   wet_share     = wetTotal × (distPct / 100)
-//   slab_load     = wet_share + addLoad   (slab design load)
-//   prop_load_in  = load arriving from above (design load for prop spacing)
-//   prop_load_out = prop_load_in − wet_share          (not-propped-to-ground)
-//                 = prop_load_in + addLoad             (propped-to-ground, wet_share = 0)
+//   prop_load_in  = carry + addLoad        (prop design load at this level)
+//   slab_load     = wet_share + addLoad    (slab capacity check — both cases)
+//   carry         = prop_load_in                  (propped to ground)
+//                 = prop_load_in − slab_load      (not propped to ground)
 //
 // Not Propped to Ground:
-//   distPct is user-defined per level (must sum to 100 %).  Each slab absorbs
-//   its wet_share, reducing the cascade.  addLoad is local to the slab design
-//   check and does not accumulate in the cascade.
+//   distPct is user-defined per level and must sum to 100 %.  Each slab absorbs
+//   its wet_share plus its own addLoad, so the cascade resolves to exactly zero
+//   after the last level.
 //
 // Propped to Ground:
-//   distPct forced to 0, so wet_share = 0.  The slab absorbs nothing; addLoad
-//   at each level flows directly into the props and accumulates in the cascade.
+//   Intermediate slabs are propped through and absorb nothing — the whole wet
+//   load plus every addLoad above carries down to the ground slab, which takes
+//   the full wet_share (distPct = 100).  Intermediate addLoad is deliberately
+//   counted twice: once against that slab's own capacity, and once in the prop
+//   line below it.  These are two separate load paths, and a slab you have
+//   chosen to prop through cannot be relied on to shed its construction load.
 //
 // @param {number}  wetTotal          – wet slab total: slabLoad + addLoad (kPa)
-// @param {Array}   supportingLevels  – top-to-bottom; each entry: { addLoad, distPct }
+// @param {Array}   supportingLevels  – top-to-bottom; each entry:
+//                                      { addLoad, distPct, isGround }
 // @param {boolean} proppedToGround
 // @returns {Array} one object per supporting level:
 //   { prop_load_in, wet_share, slab_load, prop_load_out }
 //
 function computeLoadSharing(wetTotal, supportingLevels, proppedToGround) {
   const results = [];
-  let prop_load_in = wetTotal;
+  let carry = wetTotal;
 
   supportingLevels.forEach(level => {
     const add_load  = level.addLoad ?? 0;
-    const dist_pct  = proppedToGround ? 0 : (level.distPct ?? 0);
+    const dist_pct  = proppedToGround
+      ? (level.isGround ? 100 : 0)       // T/G: ground takes the whole wet load
+      : (level.distPct ?? 0);
     const wet_share = wetTotal * (dist_pct / 100);
-    const slab_load = wet_share + add_load;
+
+    const prop_load_in = carry + add_load;
+    const slab_load    = wet_share + add_load;
 
     const prop_load_out = proppedToGround
-      ? prop_load_in + add_load          // add_load accumulates; nothing absorbed by slab
-      : prop_load_in - wet_share;        // slab absorbs wet_share; add_load stays local
+      ? prop_load_in                     // propped through; nothing absorbed by the slab
+      : prop_load_in - slab_load;        // slab absorbs its wet share and its own add load
 
     results.push({ prop_load_in, wet_share, slab_load, prop_load_out });
 
-    prop_load_in = prop_load_out;
+    carry = prop_load_out;
   });
 
   return results;
@@ -209,10 +223,14 @@ function runCalc(opts = {}) {
 
         if (!pourResult.isNP) {
           // ── Run the cascade engine ──────────────────────────────────────
-          const supportInputs = activeBelowEntries.map(bl => ({
-            addLoad: bl.addLoad ?? 0,
-            distPct: bl.distPct ?? 0,
-          }));
+          const supportInputs = activeBelowEntries.map(bl => {
+            const blev = levels.find(l => l.id === bl.levelId);
+            return {
+              addLoad:  bl.addLoad ?? 0,
+              distPct:  bl.distPct ?? 0,
+              isGround: !!(blev && isBaseLevel(blev)),
+            };
+          });
           const sharingCalc = computeLoadSharing(totalWetLoad, supportInputs, reachesGround);
 
           // Pass 1 (non-TG only): check every slab can carry its slab_load.

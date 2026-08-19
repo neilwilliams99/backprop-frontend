@@ -298,7 +298,14 @@ function runCalc(opts = {}) {
           // ── CASE A: T/G ─────────────────────────────────────────────────
           // Every level in the stack (including intermediates) props the FULL
           // wet load. Ground slab is recorded as T/G with no prop spacing.
+          //
+          // A level's own additional load sits on that level's slab, beside the
+          // props bearing on it — so props AT that level are sized for the load
+          // arriving from above only, and the additional load joins the cascade
+          // for every level below. Matches the T/G path of computeLoadSharing().
           pourResult.isTG = true;
+
+          let cumLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
             const blev = levels.find(l => l.id === bl.levelId);
@@ -307,7 +314,7 @@ function runCalc(opts = {}) {
 
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
-            const propSpacing = Math.sqrt(propCapKN / totalWetLoad);
+            const propSpacing = Math.sqrt(propCapKN / cumLoad);
             const cappedSpacing = Math.min(propSpacing, maxSp);
             const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
             if (status === 'Fail') pourResult.isNP = true;
@@ -315,18 +322,24 @@ function runCalc(opts = {}) {
             pourResult.levels.push({
               name: blev.name,
               isGround: isGndLevel,
-              cumulativeLoad: totalWetLoad,
+              cumulativeLoad: cumLoad,
               capacity: isGndLevel ? null : bl.slabCap,
               propCap: propCapKN,
-              netLoad: isGndLevel ? 0 : totalWetLoad,
+              netLoad: isGndLevel ? 0 : cumLoad,
               status,
               propSpacing: cappedSpacing > 0 ? cappedSpacing : null,
               propId: bl.propId,
             });
+
+            cumLoad += (bl.addLoad ?? 0);
           });
 
         } else {
           // ── CASE B: Distributed across load-bearing slabs ────────────────
+          //
+          // At each level the slab's effective capacity absorbs both the load
+          // arriving through the props above and that level's own additional
+          // load; whatever remains carries on down the stack.
           let cumLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
@@ -348,7 +361,10 @@ function runCalc(opts = {}) {
               propSpacing = null;
             }
 
-            const effCap = bl.slabCap * (bl.sm ?? 1.0);
+            const effCap  = bl.slabCap * (bl.sm ?? 1.0);
+            const addLoadBl = bl.addLoad ?? 0;
+            const carryDown = Math.max(0, cumLoad + addLoadBl - effCap);
+
             pourResult.levels.push({
               name: blev.name,
               isGround: false,
@@ -357,14 +373,13 @@ function runCalc(opts = {}) {
               sm: bl.sm ?? 1.0,
               effectiveCapacity: effCap,
               propCap: propCapKN,
-              netLoad: Math.max(0, cumLoad - effCap),
+              netLoad: carryDown,
               status,
               propSpacing,
               propId: bl.propId,
             });
 
-            const effectiveCap = bl.slabCap * (bl.sm ?? 1.0);
-            cumLoad = Math.max(0, cumLoad - effectiveCap);
+            cumLoad = carryDown;
           });
 
           if (cumLoad > 0.01) {

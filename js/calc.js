@@ -299,13 +299,12 @@ function runCalc(opts = {}) {
           // Every level in the stack (including intermediates) props the FULL
           // wet load. Ground slab is recorded as T/G with no prop spacing.
           //
-          // A level's own additional load sits on that level's slab, beside the
-          // props bearing on it — so props AT that level are sized for the load
-          // arriving from above only, and the additional load joins the cascade
-          // for every level below. Matches the T/G path of computeLoadSharing().
+          // A level's additional load is applied AT that level: it is added to the
+          // load arriving from above, and the props bearing on that level are
+          // sized for the sum. Nothing is absorbed on the way down.
           pourResult.isTG = true;
 
-          let cumLoad = totalWetLoad;
+          let carryLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
             const blev = levels.find(l => l.id === bl.levelId);
@@ -314,6 +313,8 @@ function runCalc(opts = {}) {
 
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
+
+            const cumLoad = carryLoad + (bl.addLoad ?? 0);
             const propSpacing = Math.sqrt(propCapKN / cumLoad);
             const cappedSpacing = Math.min(propSpacing, maxSp);
             const status = cappedSpacing > 0 ? cappedSpacing.toFixed(2) + 'm' : 'Fail';
@@ -331,16 +332,17 @@ function runCalc(opts = {}) {
               propId: bl.propId,
             });
 
-            cumLoad += (bl.addLoad ?? 0);
+            carryLoad = cumLoad;
           });
 
         } else {
           // ── CASE B: Distributed across load-bearing slabs ────────────────
           //
-          // At each level the slab's effective capacity absorbs both the load
-          // arriving through the props above and that level's own additional
-          // load; whatever remains carries on down the stack.
-          let cumLoad = totalWetLoad;
+          // A level's additional load is applied AT that level: it is added to the
+          // load arriving from above, and the props bearing on that level are
+          // sized for the sum. The slab's effective capacity is then absorbed
+          // and whatever remains carries on down the stack.
+          let carryLoad = totalWetLoad;
 
           activeBelowEntries.forEach(bl => {
             const blev = levels.find(l => l.id === bl.levelId);
@@ -348,6 +350,8 @@ function runCalc(opts = {}) {
 
             const propCapKN = bl.propCapOverride !== null ? bl.propCapOverride : getPropCap(bl.propId, bl.propSnapshot);
             if (!propCapKN) { pourResult.isNP = true; pourResult.failReason = `No prop capacity set at ${blev.name}. Assign a prop in zone settings.`; return; }
+
+            const cumLoad = carryLoad + (bl.addLoad ?? 0);
             let propSpacing = null;
             let status = '';
 
@@ -361,9 +365,8 @@ function runCalc(opts = {}) {
               propSpacing = null;
             }
 
-            const effCap  = bl.slabCap * (bl.sm ?? 1.0);
-            const addLoadBl = bl.addLoad ?? 0;
-            const carryDown = Math.max(0, cumLoad + addLoadBl - effCap);
+            const effCap    = bl.slabCap * (bl.sm ?? 1.0);
+            const carryDown = Math.max(0, cumLoad - effCap);
 
             pourResult.levels.push({
               name: blev.name,
@@ -379,13 +382,13 @@ function runCalc(opts = {}) {
               propId: bl.propId,
             });
 
-            cumLoad = carryDown;
+            carryLoad = carryDown;
           });
 
-          if (cumLoad > 0.01) {
+          if (carryLoad > 0.01) {
             pourResult.isNP = true;
             pourResult.isTG = false;
-            pourResult.failReason = `Load not fully resolved — ${cumLoad.toFixed(2)} kPa remaining after the last load-bearing level. Add more load-bearing levels or increase slab capacity.`;
+            pourResult.failReason = `Load not fully resolved — ${carryLoad.toFixed(2)} kPa remaining after the last load-bearing level. Add more load-bearing levels or increase slab capacity.`;
             pourResult.levels.forEach(l => {
               l.status = 'Fail';
               l.propSpacing = null;

@@ -1,0 +1,7 @@
+# Claude Code — per-machine settings and scratch worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# OS
+.DS_Store
+Thumbs.db

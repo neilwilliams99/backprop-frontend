@@ -2,6 +2,9 @@
 //  AUTH
 // ════════════════════════════════════════════════
 let currentUser = null;
+// Set by signOut() so the SIGNED_OUT handler can tell a deliberate sign-out from
+// one the server forced on us (single-session enforcement, revoked token).
+let _userInitiatedSignOut = false;
 let authMode = 'signin';
 let _authInitializing = true;
 let _isPasswordRecovery = false;
@@ -242,6 +245,7 @@ function closeLegal() {
 }
 
 async function signOut() {
+  _userInitiatedSignOut = true;
   await supa.auth.signOut();
   navReplace({ screen: 'auth' });
   currentUser = null;

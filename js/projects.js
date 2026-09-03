@@ -5,6 +5,9 @@
 // Each project stored as: { id, project, levels, props, calcResults }
 let projectStore = [];
 let activeProjectId = null;
+// Saves are silent when they succeed; this stops a failing session toasting
+// every 2 seconds while still warning the first time.
+let _saveErrorNotified = false;
 
 function makeNewProjectData(name, jobNo) {
   const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
@@ -73,6 +76,15 @@ async function dbLoadProjects() {
 
 }
 
+// A failed save used to be console-only, so work could be lost in silence —
+// most likely when the session is terminated underneath us.
+function notifySaveFailed(label, error) {
+  console.error(label + ':', error);
+  if (_saveErrorNotified) return;
+  _saveErrorNotified = true;
+  showToast('Changes could not be saved — check your connection, and copy any recent edits before reloading.', 'error', 12000);
+}
+
 async function dbSaveProject(p) {
   if (!currentUser) return;
   const payload = {
@@ -84,15 +96,14 @@ async function dbSaveProject(p) {
   };
   if (p._supaId) {
     const { error } = await supa.from('projects').update(payload).eq('id', p._supaId);
-    if (error) console.error('Save error:', error);
-    // silent save
+    if (error) { notifySaveFailed('Save error', error); return; }
   } else {
     const { data, error } = await supa.from('projects').insert(payload).select().single();
-    if (error) { console.error('Insert error:', error); return; }
+    if (error) { notifySaveFailed('Insert error', error); return; }
     p._supaId = data.id;
     p.id      = data.id;
-    // silent save
   }
+  _saveErrorNotified = false;   // save succeeded — re-arm the warning
 }
 
 async function createProject() {

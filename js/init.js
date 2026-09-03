@@ -19,6 +19,13 @@ supa.auth.onAuthStateChange(async (event, session) => {
     await dbLoadProjects();
     await showDashboardWithAccessCheck(currentUser);
   } else if (event === 'SIGNED_OUT') {
+    if (!_userInitiatedSignOut) {
+      setTimeout(() => showToast(
+        'Signed out — this account was signed in on another device. Each account allows one active session at a time.',
+        'error', 12000
+      ), 400);
+    }
+    _userInitiatedSignOut = false;
     _isPasswordRecovery = false;
     currentUser = null;
     projectStore = [];

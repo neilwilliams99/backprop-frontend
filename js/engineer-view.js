@@ -206,7 +206,7 @@ function renderEngineerView() {
         return `<td class="${passes ? 'cell-ok' : 'cell-np'}" title="Slab attracts ${share.toFixed(2)} kPa, capacity ${cap.toFixed(2)} kPa">${pct.toFixed(0)}%</td>`;
       }
       const sm = entry.sm ?? 1.0;
-      return `<td class="${sm >= 1.0 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np'}">${sm.toFixed(2)}</td>`;
+      return `<td class="${sm >= 0.95 ? 'cell-ok' : sm >= 0.7 ? 'cell-warn' : 'cell-np'}">${sm.toFixed(2)}</td>`;
     });
 
   // ── 6. Additional Load ───────────────────────────────────────────────────────

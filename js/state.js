@@ -49,7 +49,7 @@ function makeBlEntry(levelId, active, slabCap, addLoad) {
     active,
     slabCap,
     addLoad,
-    sm: 1.0,
+    sm: 0.95,
     distPct: 0,   // % load share (Load Sharing method)
     propId,
     propSnapshot: libProp ? { type: libProp.type, capacity: libProp.capacity } : null,

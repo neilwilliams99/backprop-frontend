@@ -80,6 +80,9 @@ async function dbLoadProjects() {
 // most likely when the session is terminated underneath us.
 function notifySaveFailed(label, error) {
   console.error(label + ':', error);
+  // An auth failure here means the session was revoked underneath us — say what
+  // actually happened rather than blaming the connection.
+  if (isAuthWriteError(error)) { announceRevokedSession(); return; }
   if (_saveErrorNotified) return;
   _saveErrorNotified = true;
   showToast('Changes could not be saved — check your connection, and copy any recent edits before reloading.', 'error', 12000);

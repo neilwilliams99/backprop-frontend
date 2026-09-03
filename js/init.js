@@ -19,9 +19,11 @@ supa.auth.onAuthStateChange(async (event, session) => {
     await dbLoadProjects();
     await showDashboardWithAccessCheck(currentUser);
   } else if (event === 'SIGNED_OUT') {
+    // Reached both by signOut() and by supabase-js removing a session it found
+    // invalid on load — the latter is how a taken-over session usually ends.
     if (!_userInitiatedSignOut) {
       setTimeout(() => showToast(
-        'Signed out — this account was signed in on another device. Each account allows one active session at a time.',
+        'A session was started on another device. Only one active session is permitted, so you have been logged out.',
         'error', 12000
       ), 400);
     }
@@ -29,10 +31,8 @@ supa.auth.onAuthStateChange(async (event, session) => {
     _isPasswordRecovery = false;
     currentUser = null;
     projectStore = [];
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('projectListScreen').style.display = 'none';
-    document.getElementById('paywallScreen').style.display = 'none';
-    document.getElementById('appShell').style.display = 'none';
+    _sessionRevoked = false;   // re-arm the session guard for the next sign-in
+    resetAuthScreen();
   }
 });
 

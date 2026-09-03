@@ -257,8 +257,6 @@
   </div>
 </header>
 
-<!-- ══ TOAST ══ -->
-<div id="toastContainer" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column-reverse;gap:8px;z-index:9000;pointer-events:none"></div>
 
 <!-- ══ IMPORT MODAL ══ -->
 
@@ -655,6 +653,11 @@
     <div id="legalBody" style="font-size:13px;color:var(--text-muted);font-family:'DM Mono',monospace;line-height:1.8"></div>
   </div>
 </div>
+
+<!-- ══ TOAST ══ -->
+<!-- Must sit outside #appShell (hidden after sign-out) and above #authScreen
+     (z-index 9999), or messages shown on the auth screen are never seen. -->
+<div id="toastContainer" style="position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column-reverse;gap:8px;z-index:10001;pointer-events:none"></div>
 
   <!-- JS (end of body) -->
   <script src="js/config.js"></script>

@@ -244,6 +244,21 @@ function closeLegal() {
   document.getElementById('legalPage').style.display = 'none';
 }
 
+// Shows the auth screen in a usable state. handleAuth() disables the button and
+// blanks its label while signing in, and never restores it on success — so any
+// path back to the auth screen that skips this leaves an unclickable Sign In.
+function resetAuthScreen() {
+  const btn = document.getElementById('authBtn');
+  if (btn) { btn.disabled = false; btn.textContent = authMode === 'signup' ? 'Create Account' : 'Sign In'; btn.onclick = handleAuth; }
+  const err = document.getElementById('authError'); if (err) err.style.display = 'none';
+  const msg = document.getElementById('authMsg');   if (msg) msg.style.display = 'none';
+  const pw  = document.getElementById('authPassword'); if (pw) pw.value = '';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('projectListScreen').style.display = 'none';
+  document.getElementById('paywallScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'none';
+}
+
 async function signOut() {
   _userInitiatedSignOut = true;
   // A revoked session has nothing left to end server-side and can throw here;
@@ -252,11 +267,7 @@ async function signOut() {
   navReplace({ screen: 'auth' });
   currentUser = null;
   projectStore = [];
-  const _sb = document.getElementById('authBtn');
-  if (_sb) { _sb.disabled = false; _sb.textContent = 'Sign In'; _sb.onclick = handleAuth; }
-  document.getElementById('authScreen').style.display = 'flex';
-  document.getElementById('projectListScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'none';
+  resetAuthScreen();
 }
 
 // Check session immediately on load — prevents flash of login screen

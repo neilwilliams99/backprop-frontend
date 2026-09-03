@@ -85,7 +85,7 @@ function notifySaveFailed(label, error) {
   if (isAuthWriteError(error)) { announceRevokedSession(); return; }
   if (_saveErrorNotified) return;
   _saveErrorNotified = true;
-  showToast('Changes could not be saved — check your connection, and copy any recent edits before reloading.', 'error', 12000);
+  showToast('Changes could not be saved — check your connection.', 'error', 12000);
 }
 
 async function dbSaveProject(p) {

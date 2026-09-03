@@ -9,9 +9,9 @@
 // from _removeSession(), which none of those paths call — so the client keeps
 // believing it is signed in while every write is doomed.
 //
-// We therefore detect the revoked session ourselves and say so. We deliberately do
-// NOT wipe the tab: the work in memory is the only copy left, and destroying it to
-// enforce a rule the server has already enforced would be the worst outcome.
+// We therefore detect the revoked session ourselves, say so, and sign the user
+// out — the app saves on almost every edit, so there is no meaningful work left
+// in the tab to preserve.
 
 let _sessionRevoked = false;   // latch — announce once, not on every probe
 
@@ -40,12 +40,13 @@ async function announceRevokedSession() {
   if (_sessionRevoked) return;
   _sessionRevoked = true;
   await dlgAlert(
-    'Signed in on another device',
-    'This account allows one active session at a time, and it has been signed in ' +
-    'somewhere else — so this window can no longer save.\n\n' +
-    'Copy any recent changes you need, then reload to sign in again.',
+    'Session Ended',
+    'A session has been started on another device. Only one active session is ' +
+    'permitted. You will now be logged out.',
     'OK'
   );
+  await signOut();
+  _sessionRevoked = false;   // re-arm for whoever signs in next
 }
 
 // Probe the session. Only reports a revocation the server actually stated.

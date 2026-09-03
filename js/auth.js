@@ -246,7 +246,9 @@ function closeLegal() {
 
 async function signOut() {
   _userInitiatedSignOut = true;
-  await supa.auth.signOut();
+  // A revoked session has nothing left to end server-side and can throw here;
+  // the local teardown below must happen either way.
+  try { await supa.auth.signOut({ scope: 'local' }); } catch (e) { console.warn('Sign out:', e); }
   navReplace({ screen: 'auth' });
   currentUser = null;
   projectStore = [];

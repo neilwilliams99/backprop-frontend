@@ -16,6 +16,7 @@ function openZones(levelId) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-zones').classList.add('active');
   renderZones(lev);
+  navPush({ screen: 'app', page: 'zones', projectId: activeProjectId, levelId });
 }
 
 function refreshZoneLevelsBelow(zone, lev) {

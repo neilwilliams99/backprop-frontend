@@ -243,6 +243,7 @@ function closeLegal() {
 
 async function signOut() {
   await supa.auth.signOut();
+  navReplace({ screen: 'auth' });
   currentUser = null;
   projectStore = [];
   const _sb = document.getElementById('authBtn');

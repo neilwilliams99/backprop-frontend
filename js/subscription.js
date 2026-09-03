@@ -116,4 +116,7 @@ async function showDashboardWithAccessCheck(user) {
   document.getElementById('projectListScreen').style.display = 'flex';
   updateDashWelcome();
   renderProjectList();
+  // Seed the history state — this is the post-login entry point, so without it
+  // the Dashboard has no entry and Back from the first page leaves the site.
+  navReplace({ screen: 'projects' });
 }

@@ -233,6 +233,7 @@ function showProjectList() {
   document.getElementById('projectListScreen').style.display = 'flex';
   updateDashWelcome();
   renderProjectList();
+  navPush({ screen: 'projects' });
 }
 
 async function deleteProject(id) {

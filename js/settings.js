@@ -108,4 +108,5 @@ function showPage(page) {
   if (page === 'engineer') renderEngineerView();
   if (page === 'builder') renderBuilderView();
   updateSummary();
+  navPush({ screen: 'app', page, projectId: activeProjectId });
 }
